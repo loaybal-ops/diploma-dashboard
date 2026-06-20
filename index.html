@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>التحليل الشامل لبرامج الدبلوم — الكلية التطبيقية | جامعة الملك عبدالعزيز</title>
+<meta name="description" content="داشبورد تنفيذي لتحليل برامج الدبلوم بالكلية التطبيقية بجامعة الملك عبدالعزيز - بدون بيانات مدمجة، ترفع البيانات محلياً">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  * { font-family: 'Tajawal', system-ui, sans-serif; }
+  body { margin: 0; background: #FFFFFF; }
+  #loader {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; background: #F5F5F0;
+    z-index: 9999; transition: opacity 0.5s; gap: 20px;
+  }
+  .spinner {
+    width: 60px; height: 60px; border: 4px solid #E8D9B8;
+    border-top-color: #006633; border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { color: #004A25; font-weight: 700; font-size: 18px; }
+  .loader-sub { color: #5C5C5C; font-size: 14px; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "recharts": "https://esm.sh/recharts@2.12.7?deps=react@18.3.1,react-dom@18.3.1",
+    "lucide-react": "https://esm.sh/lucide-react@0.383.0?deps=react@18.3.1",
+    "xlsx": "https://esm.sh/xlsx@0.18.5"
+  }
+}
+</script>
+</head>
+<body>
+<div id="loader">
+  <div class="spinner"></div>
+  <div class="loader-text">جاري تجهيز الواجهة...</div>
+  <div class="loader-sub">الكلية التطبيقية | جامعة الملك عبدالعزيز</div>
+</div>
+<div id="root"></div>
+
+<script type="module">
+import { createRoot } from 'react-dom/client';
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LabelList
+} from "recharts";
+import {
+  GraduationCap,
+  TrendingUp,
+  DollarSign,
+  Briefcase,
+  AlertTriangle,
+  BookOpen,
+  Users,
+  Award,
+  Search,
+  Megaphone,
+  AlertCircle,
+  ArrowDownUp,
+  Lightbulb,
+  ScrollText,
+  Upload,
+  FileSpreadsheet,
+  Shield,
+  RefreshCw,
+  X,
+  CheckCircle2,
+  FileWarning
+} from "lucide-react";
+import * as XLSX from "xlsx";
+const C = {
+  primary: "#006633",
+  primaryDark: "#004A25",
+  primaryLight: "#2E8B57",
+  gold: "#C5A572",
+  goldLight: "#E8D9B8",
+  ivory: "#F5F5F0",
+  ivoryDark: "#EBEAE0",
+  text: "#1A1A1A",
+  textMuted: "#5C5C5C",
+  white: "#FFFFFF",
+  catA: "#006633",
+  catB: "#4A8B5C",
+  catC: "#D4A24C",
+  catD: "#A63A3A"
+};
+const KAU_LOGO = "data:image/jpeg;base64,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";
+const SHEET_NAMES = {
+  mcda: "MCDA - \u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0634\u0627\u0645\u0644",
+  demand: "\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0625\u0642\u0628\u0627\u0644",
+  financial: "\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0643\u0641\u0627\u0621\u0629 \u0627\u0644\u0645\u0627\u0644\u064A\u0629",
+  employment: "\u062A\u062D\u0644\u064A\u0644 \u0646\u0633\u0628 \u0627\u0644\u062A\u0648\u0638\u064A\u0641",
+  market: "\u062A\u062D\u0644\u064A\u0644 \u0627\u062D\u062A\u064A\u0627\u062C \u0633\u0648\u0642 \u0627\u0644\u0639\u0645\u0644"
+};
+function findSheet(wb, targetName) {
+  if (wb.Sheets[targetName]) return wb.Sheets[targetName];
+  const norm = (s) => s.replace(/\s+/g, "").replace(/[^\u0600-\u06FF\w]/g, "");
+  const t = norm(targetName);
+  for (const name of wb.SheetNames) {
+    if (norm(name).includes(t.substring(0, 8)) || t.includes(norm(name).substring(0, 8))) {
+      return wb.Sheets[name];
+    }
+  }
+  return null;
+}
+function aoa(ws) {
+  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, blankrows: false });
+}
+function parseMCDA(wb) {
+  const ws = findSheet(wb, SHEET_NAMES.mcda);
+  if (!ws) throw new Error(`\u0627\u0644\u0648\u0631\u0642\u0629 "${SHEET_NAMES.mcda}" \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629`);
+  const rows = aoa(ws);
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i] || [];
+    if (r[0] === "#" && r[1] === "\u0627\u0644\u062A\u062E\u0635\u0635") {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx === -1) throw new Error(`\u0635\u0641\u0648\u0641 \u0627\u0644\u062A\u0631\u0648\u064A\u0633\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629 \u0641\u064A "${SHEET_NAMES.mcda}"`);
+  const programs = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    const rank = r[0];
+    if (typeof rank !== "number") break;
+    programs.push({
+      rank,
+      name: r[1],
+      mode: r[2],
+      terms: r[3],
+      demand: r[4],
+      financial: r[5],
+      employment: r[6],
+      market: r[7],
+      score: r[8],
+      category: r[9],
+      limitedData: typeof r[3] === "number" && r[3] <= 2
+    });
+  }
+  if (programs.length === 0) throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0633\u062A\u062E\u0631\u0627\u062C \u0623\u064A \u0628\u0631\u0646\u0627\u0645\u062C \u0645\u0646 \u0648\u0631\u0642\u0629 MCDA");
+  return programs;
+}
+function parseDemand(wb) {
+  const ws = findSheet(wb, SHEET_NAMES.demand);
+  if (!ws) return null;
+  const rows = aoa(ws);
+  const records = [];
+  let currentMode = null;
+  let inDataBlock = false;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i] || [];
+    const c0 = r[0];
+    if (typeof c0 === "string") {
+      if (c0.includes("\u0627\u0644\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F")) {
+        currentMode = "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F";
+        inDataBlock = false;
+        continue;
+      }
+      if (c0.includes("\u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0645 \u0627\u0644\u0645\u0633\u0627\u0626\u064A")) {
+        currentMode = "\u0627\u0646\u062A\u0638\u0627\u0645 \u0645\u0633\u0627\u0626\u064A";
+        inDataBlock = false;
+        continue;
+      }
+      if (c0 === "\u0627\u0644\u062A\u062E\u0635\u0635" && r[1] === "\u0627\u0644\u0634\u0637\u0631") {
+        inDataBlock = true;
+        continue;
+      }
+    }
+    if (!inDataBlock || !currentMode) continue;
+    const name = r[0];
+    const avg = r[9];
+    if (typeof name === "string" && typeof avg === "number") {
+      records.push({ name, mode: currentMode, shatr: r[1], avg });
+    }
+  }
+  const groups = {};
+  records.forEach((rec) => {
+    const k = `${rec.name}__${rec.mode}`;
+    if (!groups[k]) groups[k] = { name: rec.name, mode: rec.mode, vals: [] };
+    groups[k].vals.push(rec.avg);
+  });
+  const aggregated = Object.values(groups).map((g) => ({
+    name: g.name,
+    mode: g.mode,
+    value: Math.round(g.vals.reduce((a, b) => a + b, 0) / g.vals.length),
+    label: `${g.name} (${g.mode === "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F" ? "\u0639\u0646 \u0628\u064F\u0639\u062F" : "\u0645\u0633\u0627\u0626\u064A"})`
+  }));
+  const top10 = [...aggregated].sort((a, b) => b.value - a.value).slice(0, 10);
+  const bottom5 = [...aggregated].filter((p) => p.value > 0).sort((a, b) => a.value - b.value).slice(0, 5);
+  return { top10, bottom5, all: aggregated };
+}
+function parseFinancial(wb) {
+  const ws = findSheet(wb, SHEET_NAMES.financial);
+  if (!ws) return null;
+  const rows = aoa(ws);
+  const records = [];
+  let currentMode = null;
+  let inDataBlock = false;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i] || [];
+    const c0 = r[0];
+    if (typeof c0 === "string") {
+      if (c0.includes("\u0627\u0644\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F")) {
+        currentMode = "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F";
+        inDataBlock = false;
+        continue;
+      }
+      if (c0.includes("\u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0645 \u0627\u0644\u0645\u0633\u0627\u0626\u064A")) {
+        currentMode = "\u0627\u0646\u062A\u0638\u0627\u0645 \u0645\u0633\u0627\u0626\u064A";
+        inDataBlock = false;
+        continue;
+      }
+      if (c0 === "\u0627\u0644\u062A\u062E\u0635\u0635" && r[1] === "\u0627\u0644\u0634\u0637\u0631") {
+        inDataBlock = true;
+        continue;
+      }
+    }
+    if (!inDataBlock || !currentMode) continue;
+    const name = r[0];
+    const shatr = r[1];
+    const avg = r[4];
+    const tier = r[5];
+    if (typeof name === "string" && typeof avg === "number" && tier) {
+      records.push({ name, mode: currentMode, shatr, avg, tier });
+    }
+  }
+  const efficient = records.filter((r) => r.avg > 0).sort((a, b) => a.avg - b.avg).slice(0, 5).map((r) => ({
+    label: `${r.name} (${r.mode === "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F" ? "\u0639\u0646 \u0628\u064F\u0639\u062F" : "\u0645\u0633\u0627\u0626\u064A"} - ${r.shatr})`,
+    pct: +(r.avg * 100).toFixed(1)
+  }));
+  const inefficient = records.filter((r) => r.avg > 0).sort((a, b) => b.avg - a.avg).slice(0, 5).map((r) => ({
+    label: `${r.name} (${r.mode === "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F" ? "\u0639\u0646 \u0628\u064F\u0639\u062F" : "\u0645\u0633\u0627\u0626\u064A"} - ${r.shatr})`,
+    pct: +(r.avg * 100).toFixed(1)
+  }));
+  return { records, efficient, inefficient };
+}
+function parseEmployment(wb) {
+  const ws = findSheet(wb, SHEET_NAMES.employment);
+  if (!ws) return null;
+  const rows = aoa(ws);
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i] || [];
+    if (r[0] === "\u0627\u0644\u062A\u062E\u0635\u0635" && (r[2] === "\u0646\u0633\u0628\u0629 \u0627\u0644\u062A\u0648\u0638\u064A\u0641" || r[2] && String(r[2]).includes("\u0627\u0644\u062A\u0648\u0638\u064A\u0641"))) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx === -1) return null;
+  const records = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    const name = r[0];
+    if (!name || typeof name !== "string") continue;
+    if (name.includes("\u062F\u0644\u064A\u0644") || name.includes("\u2014") && !r[2]) break;
+    const rate = r[2];
+    const grads = r[3];
+    const tier = r[4];
+    if (typeof rate === "number") {
+      records.push({
+        name,
+        value: +(rate * 100).toFixed(1),
+        graduates: typeof grads === "number" ? grads : null,
+        tier: tier || null
+      });
+    }
+  }
+  records.sort((a, b) => b.value - a.value);
+  return records;
+}
+function parseMarket(wb) {
+  const ws = findSheet(wb, SHEET_NAMES.market);
+  if (!ws) return null;
+  const rows = aoa(ws);
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i] || [];
+    if (r[0] === "\u0627\u0644\u062A\u062E\u0635\u0635" && r[1] && String(r[1]).includes("\u0627\u0644\u0645\u0631\u0635\u062F")) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx === -1) return null;
+  const records = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    const name = r[0];
+    if (!name || typeof name !== "string") continue;
+    if (name.includes("\u062F\u0644\u064A\u0644") || name.includes("\u0627\u0644\u0645\u0635\u062F\u0631")) break;
+    const marketName = r[1];
+    const tier = r[2];
+    if (tier && typeof tier === "string") {
+      records.push({ name, marketName, tier });
+    }
+  }
+  return records;
+}
+function parseAll(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("\u0641\u0634\u0644 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0644\u0641"));
+    reader.onload = (e) => {
+      try {
+        const buf = e.target.result;
+        const wb = XLSX.read(buf, { type: "array" });
+        const programs = parseMCDA(wb);
+        const demand = parseDemand(wb);
+        const financial = parseFinancial(wb);
+        const employment = parseEmployment(wb);
+        const market = parseMarket(wb);
+        resolve({ programs, demand, financial, employment, market });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+const catColor = (cat) => ({ "\u0623": C.catA, "\u0628": C.catB, "\u062C": C.catC, "\u062F": C.catD })[cat] || C.textMuted;
+const catBg = (cat) => ({ "\u0623": "#E6F0EB", "\u0628": "#EDF4EE", "\u062C": "#FAF1DC", "\u062F": "#F5E1E1" })[cat] || C.ivory;
+const useReveal = () => {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      ([e]) => e.isIntersecting && setVisible(true),
+      { threshold: 0.1 }
+    );
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
+};
+const GoldDivider = ({ width = "80px", className = "" }) => /* @__PURE__ */ jsxs("div", { className: `flex items-center justify-center my-6 ${className}`, children: [
+  /* @__PURE__ */ jsx("div", { style: { width, height: "2px", background: `linear-gradient(90deg, transparent, ${C.gold}, transparent)` } }),
+  /* @__PURE__ */ jsx("div", { style: { width: "8px", height: "8px", background: C.gold, transform: "rotate(45deg)", margin: "0 12px" } }),
+  /* @__PURE__ */ jsx("div", { style: { width, height: "2px", background: `linear-gradient(90deg, transparent, ${C.gold}, transparent)` } })
+] });
+const SectionTitle = ({ kicker, title, subtitle }) => /* @__PURE__ */ jsxs("div", { className: "text-center mb-12", children: [
+  kicker && /* @__PURE__ */ jsx("div", { className: "text-xs tracking-[0.4em] mb-3", style: { color: C.gold, fontWeight: 600 }, children: kicker }),
+  /* @__PURE__ */ jsx("h2", { className: "text-4xl font-bold mb-2", style: { color: C.primaryDark }, children: title }),
+  subtitle && /* @__PURE__ */ jsx("p", { className: "text-base", style: { color: C.textMuted }, children: subtitle }),
+  /* @__PURE__ */ jsx(GoldDivider, {})
+] });
+const Card = ({ children, className = "", style = {} }) => /* @__PURE__ */ jsx(
+  "div",
+  {
+    className: `rounded-lg transition-all duration-300 hover:shadow-xl ${className}`,
+    style: {
+      background: C.white,
+      border: `1px solid ${C.ivoryDark}`,
+      boxShadow: "0 2px 8px rgba(0, 74, 37, 0.06)",
+      ...style
+    },
+    children
+  }
+);
+const Reveal = ({ children, delay = 0 }) => {
+  const [ref, visible] = useReveal();
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      ref,
+      style: {
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(24px)",
+        transition: `opacity 0.7s ${delay}ms ease-out, transform 0.7s ${delay}ms ease-out`
+      },
+      children
+    }
+  );
+};
+const InsightBox = ({ type = "gold", title, text }) => {
+  const styles = {
+    gold: { bg: C.goldLight + "50", border: C.gold, color: C.primaryDark, Icon: Lightbulb, defaultTitle: "\u062A\u062D\u0644\u064A\u0644 \u062A\u0646\u0641\u064A\u0630\u064A" },
+    warn: { bg: "#FFF7E6", border: "#E0A93D", color: "#7A5A1A", Icon: AlertCircle, defaultTitle: "\u062A\u0646\u0628\u064A\u0647" },
+    alert: { bg: "#FBE9E9", border: C.catD, color: C.catD, Icon: AlertTriangle, defaultTitle: "\u062A\u0646\u0628\u064A\u0647 \u0639\u0627\u0644\u064A" }
+  };
+  const s = styles[type];
+  const Icon = s.Icon;
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      className: "p-5 rounded-lg flex items-start gap-3",
+      style: { background: s.bg, border: `1px solid ${s.border}80`, borderRight: `4px solid ${s.border}` },
+      children: [
+        /* @__PURE__ */ jsx(Icon, { size: 22, color: s.border, className: "flex-shrink-0 mt-0.5" }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("div", { className: "font-bold mb-1.5", style: { color: s.color }, children: title || s.defaultTitle }),
+          /* @__PURE__ */ jsx("p", { className: "text-sm leading-relaxed", style: { color: C.text }, children: text })
+        ] })
+      ]
+    }
+  );
+};
+const DEMO_DATA = {"programs":[{"rank":1,"name":"الإعلام الرقمي","mode":"انتظام مسائي","terms":5,"demand":4.9,"financial":3.3,"employment":4.8,"market":4.4,"score":4.35,"category":"أ","limitedData":false},{"rank":2,"name":"إدارة سلاسل الإمداد","mode":"تعليم عن بُعد","terms":7,"demand":4.3,"financial":3.6,"employment":4.4,"market":3.5,"score":3.95,"category":"أ","limitedData":false},{"rank":3,"name":"السياحة","mode":"تعليم عن بُعد","terms":5,"demand":3.1,"financial":4,"employment":3.8,"market":4.8,"score":3.92,"category":"ب","limitedData":false},{"rank":4,"name":"تقنية المعلومات الصحية","mode":"تعليم عن بُعد","terms":3,"demand":4.7,"financial":3.4,"employment":3.1,"market":4.2,"score":3.85,"category":"ب","limitedData":false},{"rank":5,"name":"التصميم الجرافيكي","mode":"انتظام مسائي","terms":1,"demand":3.6,"financial":2.3,"employment":4.6,"market":4.4,"score":3.73,"category":"ب","limitedData":true},{"rank":6,"name":"السكرتارية التنفيذية","mode":"تعليم عن بُعد","terms":5,"demand":3.8,"financial":4.4,"employment":4.1,"market":2.3,"score":3.65,"category":"ب","limitedData":false},{"rank":7,"name":"الذكاء الاصطناعي التطبيقي","mode":"تعليم عن بُعد","terms":7,"demand":3.8,"financial":3.9,"employment":2.9,"market":3.8,"score":3.6,"category":"ب","limitedData":false},{"rank":8,"name":"إدارة سلاسل الإمداد","mode":"انتظام مسائي","terms":3,"demand":1.7,"financial":3.7,"employment":4.1,"market":4.8,"score":3.58,"category":"ب","limitedData":false},{"rank":9,"name":"برمجة الحاسب","mode":"تعليم عن بُعد","terms":3,"demand":3.8,"financial":1.9,"employment":4.5,"market":4.1,"score":3.57,"category":"ب","limitedData":false},{"rank":10,"name":"قواعد البيانات","mode":"انتظام مسائي","terms":6,"demand":4.5,"financial":2.5,"employment":3.7,"market":3.6,"score":3.57,"category":"ب","limitedData":false},{"rank":11,"name":"الشبكات وأمن المعلومات","mode":"تعليم عن بُعد","terms":5,"demand":2.8,"financial":2,"employment":4.7,"market":4.6,"score":3.52,"category":"ب","limitedData":false},{"rank":12,"name":"الموارد البشرية","mode":"تعليم عن بُعد","terms":7,"demand":1.8,"financial":4.4,"employment":3.6,"market":4.2,"score":3.5,"category":"ب","limitedData":false},{"rank":13,"name":"التسويق","mode":"تعليم عن بُعد","terms":1,"demand":4.3,"financial":1.5,"employment":4.2,"market":3.9,"score":3.48,"category":"ب","limitedData":true},{"rank":14,"name":"التأمين","mode":"انتظام مسائي","terms":6,"demand":3.1,"financial":2.4,"employment":4.6,"market":3.8,"score":3.47,"category":"ب","limitedData":false},{"rank":15,"name":"إدارة الأعمال","mode":"انتظام مسائي","terms":7,"demand":3.9,"financial":3.9,"employment":2.9,"market":3,"score":3.42,"category":"ب","limitedData":false},{"rank":16,"name":"إدارة المكاتب","mode":"تعليم عن بُعد","terms":7,"demand":4.5,"financial":2.6,"employment":3.7,"market":2.8,"score":3.4,"category":"ب","limitedData":false},{"rank":17,"name":"التأمين","mode":"تعليم عن بُعد","terms":6,"demand":3.7,"financial":3.6,"employment":2.1,"market":4,"score":3.35,"category":"ب","limitedData":false},{"rank":18,"name":"السكرتارية التنفيذية","mode":"انتظام مسائي","terms":6,"demand":4.2,"financial":2.9,"employment":1.7,"market":4.6,"score":3.35,"category":"ج","limitedData":false},{"rank":19,"name":"العلاقات العامة","mode":"تعليم عن بُعد","terms":6,"demand":4,"financial":3,"employment":3.5,"market":2.7,"score":3.3,"category":"ج","limitedData":false},{"rank":20,"name":"تطوير تطبيقات الويب","mode":"انتظام مسائي","terms":7,"demand":4.5,"financial":2.9,"employment":2.2,"market":3.3,"score":3.23,"category":"ج","limitedData":false},{"rank":21,"name":"المحاسبة","mode":"انتظام مسائي","terms":5,"demand":1.8,"financial":4,"employment":3.4,"market":3.5,"score":3.17,"category":"ج","limitedData":false},{"rank":22,"name":"التمويل والاستثمار","mode":"انتظام مسائي","terms":7,"demand":2.1,"financial":2.7,"employment":3.8,"market":3.9,"score":3.13,"category":"ج","limitedData":false},{"rank":23,"name":"تطوير تطبيقات الويب","mode":"تعليم عن بُعد","terms":6,"demand":1.9,"financial":3.7,"employment":4.7,"market":2.1,"score":3.1,"category":"ج","limitedData":false},{"rank":24,"name":"قواعد البيانات","mode":"تعليم عن بُعد","terms":5,"demand":4.5,"financial":2.4,"employment":3.2,"market":2.1,"score":3.05,"category":"ج","limitedData":false},{"rank":25,"name":"الدعم الفني","mode":"تعليم عن بُعد","terms":1,"demand":4.2,"financial":2.3,"employment":2.3,"market":3.4,"score":3.05,"category":"ج","limitedData":true},{"rank":26,"name":"الإعلام الرقمي","mode":"تعليم عن بُعد","terms":6,"demand":2,"financial":3.8,"employment":3.5,"market":2.8,"score":3.03,"category":"ج","limitedData":false},{"rank":27,"name":"الوسائط المتعددة","mode":"تعليم عن بُعد","terms":7,"demand":3.2,"financial":2.4,"employment":3.2,"market":3.3,"score":3.03,"category":"ج","limitedData":false},{"rank":28,"name":"الضيافة الفندقية","mode":"تعليم عن بُعد","terms":6,"demand":1.7,"financial":4,"employment":4.2,"market":1.9,"score":2.95,"category":"ج","limitedData":false},{"rank":29,"name":"برمجة الحاسب","mode":"انتظام مسائي","terms":7,"demand":3.7,"financial":1.9,"employment":3,"market":3,"score":2.9,"category":"ج","limitedData":false},{"rank":30,"name":"الموارد البشرية","mode":"انتظام مسائي","terms":7,"demand":3.1,"financial":1.9,"employment":4.6,"market":1.8,"score":2.85,"category":"ج","limitedData":false},{"rank":31,"name":"الشبكات وأمن المعلومات","mode":"انتظام مسائي","terms":3,"demand":3.5,"financial":3.2,"employment":1.9,"market":2.7,"score":2.83,"category":"ج","limitedData":false},{"rank":32,"name":"إدارة المكاتب","mode":"انتظام مسائي","terms":7,"demand":3.1,"financial":2.4,"employment":2.3,"market":3.4,"score":2.8,"category":"ج","limitedData":false},{"rank":33,"name":"إدارة المستشفيات","mode":"تعليم عن بُعد","terms":4,"demand":2.9,"financial":1.8,"employment":3.7,"market":2.7,"score":2.78,"category":"ج","limitedData":false},{"rank":34,"name":"الدعم الفني","mode":"انتظام مسائي","terms":3,"demand":1.8,"financial":3.2,"employment":1.7,"market":4.1,"score":2.7,"category":"د","limitedData":false},{"rank":35,"name":"التسويق","mode":"انتظام مسائي","terms":4,"demand":2.4,"financial":2.2,"employment":4.1,"market":1.8,"score":2.62,"category":"د","limitedData":false},{"rank":36,"name":"الذكاء الاصطناعي التطبيقي","mode":"انتظام مسائي","terms":7,"demand":3,"financial":3.3,"employment":1.9,"market":2.3,"score":2.62,"category":"د","limitedData":false},{"rank":37,"name":"تنظيم المعارض والمؤتمرات","mode":"تعليم عن بُعد","terms":6,"demand":2.1,"financial":3,"employment":2.9,"market":2.4,"score":2.6,"category":"د","limitedData":false},{"rank":38,"name":"التمويل والاستثمار","mode":"تعليم عن بُعد","terms":7,"demand":2.3,"financial":1.8,"employment":2.4,"market":3.7,"score":2.55,"category":"د","limitedData":false},{"rank":39,"name":"المحاسبة","mode":"تعليم عن بُعد","terms":7,"demand":3.7,"financial":1.6,"employment":2.4,"market":2.3,"score":2.5,"category":"د","limitedData":false},{"rank":40,"name":"التصميم الجرافيكي","mode":"تعليم عن بُعد","terms":7,"demand":1.6,"financial":3.4,"employment":3.5,"market":1.5,"score":2.5,"category":"د","limitedData":false},{"rank":41,"name":"إدارة الأعمال","mode":"تعليم عن بُعد","terms":6,"demand":1.6,"financial":2.2,"employment":3.2,"market":1.6,"score":2.15,"category":"د","limitedData":false},{"rank":42,"name":"العلاقات العامة","mode":"انتظام مسائي","terms":7,"demand":3.2,"financial":1.8,"employment":1.7,"market":1.9,"score":2.15,"category":"د","limitedData":false}],"demand":{"top10":[{"name":"التصميم الجرافيكي","mode":"انتظام مسائي","value":41,"label":"التصميم الجرافيكي (مسائي)"},{"name":"المحاسبة","mode":"انتظام مسائي","value":38,"label":"المحاسبة (مسائي)"},{"name":"التسويق","mode":"انتظام مسائي","value":37,"label":"التسويق (مسائي)"},{"name":"الموارد البشرية","mode":"انتظام مسائي","value":36,"label":"الموارد البشرية (مسائي)"},{"name":"التأمين","mode":"انتظام مسائي","value":36,"label":"التأمين (مسائي)"},{"name":"السكرتارية التنفيذية","mode":"انتظام مسائي","value":36,"label":"السكرتارية التنفيذية (مسائي)"},{"name":"إدارة المستشفيات","mode":"تعليم عن بُعد","value":35,"label":"إدارة المستشفيات (عن بُعد)"},{"name":"السياحة","mode":"تعليم عن بُعد","value":35,"label":"السياحة (عن بُعد)"},{"name":"التمويل والاستثمار","mode":"تعليم عن بُعد","value":34,"label":"التمويل والاستثمار (عن بُعد)"},{"name":"تقنية المعلومات الصحية","mode":"تعليم عن بُعد","value":34,"label":"تقنية المعلومات الصحية (عن بُعد)"}],"bottom5":[{"name":"تنظيم المعارض والمؤتمرات","mode":"تعليم عن بُعد","value":17,"label":"تنظيم المعارض والمؤتمرات (عن بُعد)"},{"name":"السكرتارية التنفيذية","mode":"تعليم عن بُعد","value":23,"label":"السكرتارية التنفيذية (عن بُعد)"},{"name":"الذكاء الاصطناعي التطبيقي","mode":"تعليم عن بُعد","value":23,"label":"الذكاء الاصطناعي التطبيقي (عن بُعد)"},{"name":"الإعلام الرقمي","mode":"تعليم عن بُعد","value":24,"label":"الإعلام الرقمي (عن بُعد)"},{"name":"تطوير تطبيقات الويب","mode":"تعليم عن بُعد","value":25,"label":"تطوير تطبيقات الويب (عن بُعد)"}],"all":[{"name":"المحاسبة","mode":"تعليم عن بُعد","value":26,"label":"المحاسبة (عن بُعد)"},{"name":"إدارة الأعمال","mode":"تعليم عن بُعد","value":28,"label":"إدارة الأعمال (عن بُعد)"},{"name":"التسويق","mode":"تعليم عن بُعد","value":30,"label":"التسويق (عن بُعد)"},{"name":"الموارد البشرية","mode":"تعليم عن بُعد","value":26,"label":"الموارد البشرية (عن بُعد)"},{"name":"إدارة سلاسل الإمداد","mode":"تعليم عن بُعد","value":31,"label":"إدارة سلاسل الإمداد (عن بُعد)"},{"name":"التمويل والاستثمار","mode":"تعليم عن بُعد","value":34,"label":"التمويل والاستثمار (عن بُعد)"},{"name":"التأمين","mode":"تعليم عن بُعد","value":30,"label":"التأمين (عن بُعد)"},{"name":"السكرتارية التنفيذية","mode":"تعليم عن بُعد","value":23,"label":"السكرتارية التنفيذية (عن بُعد)"},{"name":"إدارة المكاتب","mode":"تعليم عن بُعد","value":33,"label":"إدارة المكاتب (عن بُعد)"},{"name":"العلاقات العامة","mode":"تعليم عن بُعد","value":31,"label":"العلاقات العامة (عن بُعد)"},{"name":"الإعلام الرقمي","mode":"تعليم عن بُعد","value":24,"label":"الإعلام الرقمي (عن بُعد)"},{"name":"برمجة الحاسب","mode":"تعليم عن بُعد","value":27,"label":"برمجة الحاسب (عن بُعد)"},{"name":"قواعد البيانات","mode":"تعليم عن بُعد","value":26,"label":"قواعد البيانات (عن بُعد)"},{"name":"الشبكات وأمن المعلومات","mode":"تعليم عن بُعد","value":31,"label":"الشبكات وأمن المعلومات (عن بُعد)"},{"name":"الدعم الفني","mode":"تعليم عن بُعد","value":33,"label":"الدعم الفني (عن بُعد)"},{"name":"تطوير تطبيقات الويب","mode":"تعليم عن بُعد","value":25,"label":"تطوير تطبيقات الويب (عن بُعد)"},{"name":"الذكاء الاصطناعي التطبيقي","mode":"تعليم عن بُعد","value":23,"label":"الذكاء الاصطناعي التطبيقي (عن بُعد)"},{"name":"التصميم الجرافيكي","mode":"تعليم عن بُعد","value":28,"label":"التصميم الجرافيكي (عن بُعد)"},{"name":"الوسائط المتعددة","mode":"تعليم عن بُعد","value":31,"label":"الوسائط المتعددة (عن بُعد)"},{"name":"تقنية المعلومات الصحية","mode":"تعليم عن بُعد","value":34,"label":"تقنية المعلومات الصحية (عن بُعد)"},{"name":"إدارة المستشفيات","mode":"تعليم عن بُعد","value":35,"label":"إدارة المستشفيات (عن بُعد)"},{"name":"السياحة","mode":"تعليم عن بُعد","value":35,"label":"السياحة (عن بُعد)"},{"name":"الضيافة الفندقية","mode":"تعليم عن بُعد","value":34,"label":"الضيافة الفندقية (عن بُعد)"},{"name":"تنظيم المعارض والمؤتمرات","mode":"تعليم عن بُعد","value":17,"label":"تنظيم المعارض والمؤتمرات (عن بُعد)"},{"name":"المحاسبة","mode":"انتظام مسائي","value":38,"label":"المحاسبة (مسائي)"},{"name":"إدارة الأعمال","mode":"انتظام مسائي","value":30,"label":"إدارة الأعمال (مسائي)"},{"name":"التسويق","mode":"انتظام مسائي","value":37,"label":"التسويق (مسائي)"},{"name":"الموارد البشرية","mode":"انتظام مسائي","value":36,"label":"الموارد البشرية (مسائي)"},{"name":"إدارة سلاسل الإمداد","mode":"انتظام مسائي","value":27,"label":"إدارة سلاسل الإمداد (مسائي)"},{"name":"التمويل والاستثمار","mode":"انتظام مسائي","value":30,"label":"التمويل والاستثمار (مسائي)"},{"name":"التأمين","mode":"انتظام مسائي","value":36,"label":"التأمين (مسائي)"},{"name":"السكرتارية التنفيذية","mode":"انتظام مسائي","value":36,"label":"السكرتارية التنفيذية (مسائي)"},{"name":"إدارة المكاتب","mode":"انتظام مسائي","value":33,"label":"إدارة المكاتب (مسائي)"},{"name":"العلاقات العامة","mode":"انتظام مسائي","value":25,"label":"العلاقات العامة (مسائي)"},{"name":"الإعلام الرقمي","mode":"انتظام مسائي","value":32,"label":"الإعلام الرقمي (مسائي)"},{"name":"برمجة الحاسب","mode":"انتظام مسائي","value":27,"label":"برمجة الحاسب (مسائي)"},{"name":"قواعد البيانات","mode":"انتظام مسائي","value":26,"label":"قواعد البيانات (مسائي)"},{"name":"الشبكات وأمن المعلومات","mode":"انتظام مسائي","value":34,"label":"الشبكات وأمن المعلومات (مسائي)"},{"name":"الدعم الفني","mode":"انتظام مسائي","value":28,"label":"الدعم الفني (مسائي)"},{"name":"تطوير تطبيقات الويب","mode":"انتظام مسائي","value":32,"label":"تطوير تطبيقات الويب (مسائي)"},{"name":"الذكاء الاصطناعي التطبيقي","mode":"انتظام مسائي","value":32,"label":"الذكاء الاصطناعي التطبيقي (مسائي)"},{"name":"التصميم الجرافيكي","mode":"انتظام مسائي","value":41,"label":"التصميم الجرافيكي (مسائي)"}]},"financial":{"records":[{"name":"المحاسبة","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.629,"tier":"كفاءة منخفضة"},{"name":"المحاسبة","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.331,"tier":"كفاءة عالية"},{"name":"إدارة الأعمال","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.488,"tier":"كفاءة متوسطة"},{"name":"التسويق","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.64,"tier":"كفاءة منخفضة"},{"name":"التسويق","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.443,"tier":"كفاءة متوسطة"},{"name":"الموارد البشرية","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.655,"tier":"كفاءة منخفضة"},{"name":"الموارد البشرية","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.48,"tier":"كفاءة متوسطة"},{"name":"إدارة سلاسل الإمداد","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.31,"tier":"كفاءة عالية"},{"name":"التمويل والاستثمار","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.529,"tier":"كفاءة متوسطة"},{"name":"التمويل والاستثمار","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.422,"tier":"كفاءة متوسطة"},{"name":"التأمين","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.3,"tier":"كفاءة عالية"},{"name":"السكرتارية التنفيذية","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.479,"tier":"كفاءة متوسطة"},{"name":"السكرتارية التنفيذية","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.41,"tier":"كفاءة متوسطة"},{"name":"إدارة المكاتب","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.326,"tier":"كفاءة عالية"},{"name":"إدارة المكاتب","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.304,"tier":"كفاءة عالية"},{"name":"العلاقات العامة","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.283,"tier":"كفاءة عالية"},{"name":"العلاقات العامة","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.329,"tier":"كفاءة عالية"},{"name":"الإعلام الرقمي","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.34,"tier":"كفاءة عالية"},{"name":"الإعلام الرقمي","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.277,"tier":"كفاءة عالية"},{"name":"برمجة الحاسب","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.205,"tier":"كفاءة عالية"},{"name":"قواعد البيانات","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.235,"tier":"كفاءة عالية"},{"name":"قواعد البيانات","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.49,"tier":"كفاءة متوسطة"},{"name":"الشبكات وأمن المعلومات","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.28,"tier":"كفاءة عالية"},{"name":"الشبكات وأمن المعلومات","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.316,"tier":"كفاءة عالية"},{"name":"الدعم الفني","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.396,"tier":"كفاءة متوسطة"},{"name":"تطوير تطبيقات الويب","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.261,"tier":"كفاءة عالية"},{"name":"الذكاء الاصطناعي التطبيقي","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.244,"tier":"كفاءة عالية"},{"name":"الذكاء الاصطناعي التطبيقي","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.507,"tier":"كفاءة متوسطة"},{"name":"التصميم الجرافيكي","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.341,"tier":"كفاءة عالية"},{"name":"التصميم الجرافيكي","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.345,"tier":"كفاءة عالية"},{"name":"الوسائط المتعددة","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.518,"tier":"كفاءة متوسطة"},{"name":"تقنية المعلومات الصحية","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.31,"tier":"كفاءة عالية"},{"name":"إدارة المستشفيات","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.181,"tier":"كفاءة عالية"},{"name":"السياحة","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.305,"tier":"كفاءة عالية"},{"name":"السياحة","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.56,"tier":"كفاءة منخفضة"},{"name":"الضيافة الفندقية","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.679,"tier":"كفاءة منخفضة"},{"name":"تنظيم المعارض والمؤتمرات","mode":"تعليم عن بُعد","shatr":"طلاب","avg":0.53,"tier":"كفاءة متوسطة"},{"name":"تنظيم المعارض والمؤتمرات","mode":"تعليم عن بُعد","shatr":"طالبات","avg":0.626,"tier":"كفاءة منخفضة"},{"name":"المحاسبة","mode":"انتظام مسائي","shatr":"طلاب","avg":0.608,"tier":"كفاءة منخفضة"},{"name":"إدارة الأعمال","mode":"انتظام مسائي","shatr":"طالبات","avg":0.433,"tier":"كفاءة متوسطة"},{"name":"إدارة الأعمال","mode":"انتظام مسائي","shatr":"طلاب","avg":0.558,"tier":"كفاءة منخفضة"},{"name":"التسويق","mode":"انتظام مسائي","shatr":"طالبات","avg":0.503,"tier":"كفاءة متوسطة"},{"name":"التسويق","mode":"انتظام مسائي","shatr":"طلاب","avg":0.577,"tier":"كفاءة منخفضة"},{"name":"الموارد البشرية","mode":"انتظام مسائي","shatr":"طلاب","avg":0.304,"tier":"كفاءة عالية"},{"name":"إدارة سلاسل الإمداد","mode":"انتظام مسائي","shatr":"طالبات","avg":0.491,"tier":"كفاءة متوسطة"},{"name":"التمويل والاستثمار","mode":"انتظام مسائي","shatr":"طالبات","avg":0.278,"tier":"كفاءة عالية"},{"name":"التمويل والاستثمار","mode":"انتظام مسائي","shatr":"طلاب","avg":0.415,"tier":"كفاءة متوسطة"},{"name":"التأمين","mode":"انتظام مسائي","shatr":"طالبات","avg":0.368,"tier":"كفاءة متوسطة"},{"name":"السكرتارية التنفيذية","mode":"انتظام مسائي","shatr":"طلاب","avg":0.358,"tier":"كفاءة متوسطة"},{"name":"السكرتارية التنفيذية","mode":"انتظام مسائي","shatr":"طالبات","avg":0.336,"tier":"كفاءة عالية"},{"name":"إدارة المكاتب","mode":"انتظام مسائي","shatr":"طالبات","avg":0.228,"tier":"كفاءة عالية"},{"name":"العلاقات العامة","mode":"انتظام مسائي","shatr":"طلاب","avg":0.647,"tier":"كفاءة منخفضة"},{"name":"العلاقات العامة","mode":"انتظام مسائي","shatr":"طالبات","avg":0.535,"tier":"كفاءة متوسطة"},{"name":"الإعلام الرقمي","mode":"انتظام مسائي","shatr":"طالبات","avg":0.281,"tier":"كفاءة عالية"},{"name":"الإعلام الرقمي","mode":"انتظام مسائي","shatr":"طلاب","avg":0.516,"tier":"كفاءة متوسطة"},{"name":"برمجة الحاسب","mode":"انتظام مسائي","shatr":"طلاب","avg":0.324,"tier":"كفاءة عالية"},{"name":"برمجة الحاسب","mode":"انتظام مسائي","shatr":"طالبات","avg":0.681,"tier":"كفاءة منخفضة"},{"name":"قواعد البيانات","mode":"انتظام مسائي","shatr":"طلاب","avg":0.705,"tier":"كفاءة منخفضة"},{"name":"قواعد البيانات","mode":"انتظام مسائي","shatr":"طالبات","avg":0.563,"tier":"كفاءة منخفضة"},{"name":"الشبكات وأمن المعلومات","mode":"انتظام مسائي","shatr":"طالبات","avg":0.23,"tier":"كفاءة عالية"},{"name":"الدعم الفني","mode":"انتظام مسائي","shatr":"طلاب","avg":0.449,"tier":"كفاءة متوسطة"},{"name":"الدعم الفني","mode":"انتظام مسائي","shatr":"طالبات","avg":0.455,"tier":"كفاءة متوسطة"},{"name":"تطوير تطبيقات الويب","mode":"انتظام مسائي","shatr":"طالبات","avg":0.312,"tier":"كفاءة عالية"},{"name":"تطوير تطبيقات الويب","mode":"انتظام مسائي","shatr":"طلاب","avg":0.258,"tier":"كفاءة عالية"},{"name":"الذكاء الاصطناعي التطبيقي","mode":"انتظام مسائي","shatr":"طلاب","avg":0.329,"tier":"كفاءة عالية"},{"name":"التصميم الجرافيكي","mode":"انتظام مسائي","shatr":"طالبات","avg":0.333,"tier":"كفاءة عالية"},{"name":"التصميم الجرافيكي","mode":"انتظام مسائي","shatr":"طلاب","avg":0.632,"tier":"كفاءة منخفضة"}],"efficient":[{"label":"إدارة المستشفيات (عن بُعد - طلاب)","pct":18.1},{"label":"برمجة الحاسب (عن بُعد - طالبات)","pct":20.5},{"label":"إدارة المكاتب (مسائي - طالبات)","pct":22.8},{"label":"الشبكات وأمن المعلومات (مسائي - طالبات)","pct":23},{"label":"قواعد البيانات (عن بُعد - طلاب)","pct":23.5}],"inefficient":[{"label":"قواعد البيانات (مسائي - طلاب)","pct":70.5},{"label":"برمجة الحاسب (مسائي - طالبات)","pct":68.1},{"label":"الضيافة الفندقية (عن بُعد - طلاب)","pct":67.9},{"label":"الموارد البشرية (عن بُعد - طالبات)","pct":65.5},{"label":"العلاقات العامة (مسائي - طلاب)","pct":64.7}]},"employment":[{"name":"المحاسبة","value":93.9,"graduates":145,"tier":"مرتفع"},{"name":"الدعم الفني","value":86.2,"graduates":132,"tier":"مرتفع"},{"name":"التمويل والاستثمار","value":85.9,"graduates":81,"tier":"مرتفع"},{"name":"إدارة الأعمال","value":85.6,"graduates":134,"tier":"مرتفع"},{"name":"السكرتارية التنفيذية","value":85.1,"graduates":125,"tier":"مرتفع"},{"name":"السياحة","value":84.8,"graduates":156,"tier":"مرتفع"},{"name":"العلاقات العامة","value":75.7,"graduates":117,"tier":"مرتفع"},{"name":"إدارة المستشفيات","value":72.3,"graduates":104,"tier":"مرتفع"},{"name":"تنظيم المعارض والمؤتمرات","value":70.9,"graduates":144,"tier":"مرتفع"},{"name":"التأمين","value":67.5,"graduates":79,"tier":"متوسط"},{"name":"التسويق","value":65.4,"graduates":108,"tier":"متوسط"},{"name":"برمجة الحاسب","value":62.7,"graduates":29,"tier":"متوسط"},{"name":"التصميم الجرافيكي","value":57.4,"graduates":59,"tier":"متوسط"},{"name":"الإعلام الرقمي","value":55.9,"graduates":58,"tier":"متوسط"},{"name":"الضيافة الفندقية","value":55.6,"graduates":101,"tier":"متوسط"},{"name":"إدارة سلاسل الإمداد","value":55.4,"graduates":102,"tier":"متوسط"},{"name":"تقنية المعلومات الصحية","value":53,"graduates":121,"tier":"متوسط"},{"name":"الموارد البشرية","value":52.6,"graduates":159,"tier":"متوسط"},{"name":"الشبكات وأمن المعلومات","value":52.6,"graduates":45,"tier":"متوسط"},{"name":"قواعد البيانات","value":39.8,"graduates":171,"tier":"منخفض"},{"name":"تطوير تطبيقات الويب","value":38.2,"graduates":136,"tier":"منخفض"},{"name":"الوسائط المتعددة","value":36.6,"graduates":87,"tier":"منخفض"},{"name":"إدارة المكاتب","value":34.7,"graduates":141,"tier":"منخفض"},{"name":"الذكاء الاصطناعي التطبيقي","value":33,"graduates":56,"tier":"منخفض"}],"market":[{"name":"المحاسبة","marketName":"المحاسبة - مهن ذات صلة","tier":"احتياج منخفض"},{"name":"إدارة الأعمال","marketName":"إدارة الأعمال - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"التسويق","marketName":"التسويق - مهن ذات صلة","tier":"احتياج منخفض"},{"name":"الموارد البشرية","marketName":"الموارد البشرية - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"إدارة سلاسل الإمداد","marketName":"إدارة سلاسل الإمداد - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"التمويل والاستثمار","marketName":"التمويل والاستثمار - مهن ذات صلة","tier":"احتياج منخفض"},{"name":"التأمين","marketName":"التأمين - مهن ذات صلة","tier":"احتياج منخفض"},{"name":"السكرتارية التنفيذية","marketName":"السكرتارية التنفيذية - مهن ذات صلة","tier":"احتياج متوسط"},{"name":"إدارة المكاتب","marketName":"إدارة المكاتب - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"العلاقات العامة","marketName":"العلاقات العامة - مهن ذات صلة","tier":"احتياج منخفض"},{"name":"الإعلام الرقمي","marketName":"الإعلام الرقمي - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"برمجة الحاسب","marketName":"برمجة الحاسب - مهن ذات صلة","tier":"احتياج متوسط"},{"name":"قواعد البيانات","marketName":"قواعد البيانات - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"الشبكات وأمن المعلومات","marketName":"الشبكات وأمن المعلومات - مهن ذات صلة","tier":"احتياج منخفض"},{"name":"الدعم الفني","marketName":"الدعم الفني - مهن ذات صلة","tier":"احتياج منخفض"},{"name":"تطوير تطبيقات الويب","marketName":"تطوير تطبيقات الويب - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"الذكاء الاصطناعي التطبيقي","marketName":"الذكاء الاصطناعي التطبيقي - مهن ذات صلة","tier":"احتياج متوسط"},{"name":"التصميم الجرافيكي","marketName":"التصميم الجرافيكي - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"الوسائط المتعددة","marketName":"الوسائط المتعددة - مهن ذات صلة","tier":"احتياج منخفض"},{"name":"تقنية المعلومات الصحية","marketName":"تقنية المعلومات الصحية - مهن ذات صلة","tier":"احتياج متوسط"},{"name":"إدارة المستشفيات","marketName":"إدارة المستشفيات - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"السياحة","marketName":"السياحة - مهن ذات صلة","tier":"احتياج عالٍ"},{"name":"الضيافة الفندقية","marketName":"الضيافة الفندقية - مهن ذات صلة","tier":"احتياج متوسط"},{"name":"تنظيم المعارض والمؤتمرات","marketName":"تنظيم المعارض والمؤتمرات - مهن ذات صلة","tier":"احتياج عالٍ"}]};
+const UploadScreen = ({ onParsed }) => {
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const inputRef = useRef(null);
+  const handleFile = useCallback(async (file) => {
+    if (!file) return;
+    setError(null);
+    if (!file.name.match(/\.(xlsx|xls|xlsm)$/i)) {
+      setError("\u0646\u0648\u0639 \u0627\u0644\u0645\u0644\u0641 \u063A\u064A\u0631 \u0645\u062F\u0639\u0648\u0645. \u064A\u0631\u062C\u0649 \u0631\u0641\u0639 \u0645\u0644\u0641 Excel (.xlsx \u0623\u0648 .xls)");
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await parseAll(file);
+      onParsed(data);
+    } catch (err) {
+      setError("\u0641\u0634\u0644 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0644\u0641: " + (err.message || "\u062A\u0623\u0643\u062F \u0645\u0646 \u0623\u0646 \u0627\u0644\u0645\u0644\u0641 \u0628\u0627\u0644\u0635\u064A\u063A\u0629 \u0627\u0644\u0635\u062D\u064A\u062D\u0629"));
+      setLoading(false);
+    }
+  }, [onParsed]);
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]);
+  };
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      dir: "rtl",
+      className: "min-h-screen flex items-center justify-center px-4 py-12",
+      style: { background: `radial-gradient(ellipse at center, ${C.ivory} 0%, ${C.white} 60%, ${C.ivoryDark} 100%)` },
+      children: [
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "fixed top-8 right-8 w-32 h-32 opacity-15",
+            style: { borderTop: `2px solid ${C.gold}`, borderRight: `2px solid ${C.gold}` }
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "fixed top-8 left-8 w-32 h-32 opacity-15",
+            style: { borderTop: `2px solid ${C.gold}`, borderLeft: `2px solid ${C.gold}` }
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "fixed bottom-8 right-8 w-32 h-32 opacity-15",
+            style: { borderBottom: `2px solid ${C.gold}`, borderRight: `2px solid ${C.gold}` }
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "fixed bottom-8 left-8 w-32 h-32 opacity-15",
+            style: { borderBottom: `2px solid ${C.gold}`, borderLeft: `2px solid ${C.gold}` }
+          }
+        ),
+        /* @__PURE__ */ jsxs("div", { className: "max-w-3xl w-full", children: [
+          /* @__PURE__ */ jsxs("div", { className: "text-center mb-10", children: [
+            /* @__PURE__ */ jsx("img", { src: KAU_LOGO, alt: "KAU", style: { height: "110px", margin: "0 auto 20px" } }),
+            /* @__PURE__ */ jsx("div", { className: "text-xs tracking-[0.5em] mb-3", style: { color: C.gold, fontWeight: 700 }, children: "KING ABDULAZIZ UNIVERSITY \xB7 APPLIED COLLEGE" }),
+            /* @__PURE__ */ jsx("h1", { className: "text-4xl font-black mb-3", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0634\u0627\u0645\u0644 \u0644\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u062F\u0628\u0644\u0648\u0645" }),
+            /* @__PURE__ */ jsx("p", { className: "text-base mb-1", style: { color: C.text, fontWeight: 500 }, children: "\u0627\u0644\u0643\u0644\u064A\u0629 \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u064A\u0629 | \u062C\u0627\u0645\u0639\u0629 \u0627\u0644\u0645\u0644\u0643 \u0639\u0628\u062F\u0627\u0644\u0639\u0632\u064A\u0632" }),
+            /* @__PURE__ */ jsx(GoldDivider, { width: "100px" })
+          ] }),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "rounded-lg overflow-hidden mb-6",
+              style: { background: C.white, border: `1px solid ${C.ivoryDark}`, boxShadow: "0 8px 32px rgba(0, 74, 37, 0.12)" },
+              children: [
+                /* @__PURE__ */ jsxs("div", { className: "px-7 py-5 flex items-center gap-3 border-b", style: { background: C.primaryDark, borderColor: C.ivoryDark }, children: [
+                  /* @__PURE__ */ jsx(FileSpreadsheet, { size: 22, color: C.gold }),
+                  /* @__PURE__ */ jsxs("div", { children: [
+                    /* @__PURE__ */ jsx("div", { className: "text-white font-bold text-lg", children: "\u0631\u0641\u0639 \u0645\u0644\u0641 \u0627\u0644\u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A" }),
+                    /* @__PURE__ */ jsx("div", { className: "text-xs", style: { color: C.goldLight }, children: "\u0645\u0644\u0641 Excel \u0644\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0625\u062D\u0635\u0627\u0626\u064A\u0629" })
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "p-7", children: [
+                  !loading && /* @__PURE__ */ jsxs(
+                    "div",
+                    {
+                      onDragEnter: (e) => {
+                        e.preventDefault();
+                        setDragActive(true);
+                      },
+                      onDragLeave: (e) => {
+                        e.preventDefault();
+                        setDragActive(false);
+                      },
+                      onDragOver: (e) => e.preventDefault(),
+                      onDrop,
+                      onClick: () => inputRef.current?.click(),
+                      className: "rounded-lg p-12 text-center cursor-pointer transition-all",
+                      style: {
+                        border: `2px dashed ${dragActive ? C.primary : C.gold}`,
+                        background: dragActive ? C.goldLight + "40" : C.ivory
+                      },
+                      children: [
+                        /* @__PURE__ */ jsx(Upload, { size: 48, color: C.primary, className: "mx-auto mb-4", strokeWidth: 1.5 }),
+                        /* @__PURE__ */ jsx("div", { className: "text-lg font-bold mb-2", style: { color: C.primaryDark }, children: "\u0627\u0633\u062D\u0628 \u0645\u0644\u0641 \u0627\u0644\u0625\u0643\u0633\u0644 \u0647\u0646\u0627 \u0623\u0648 \u0627\u0646\u0642\u0631 \u0644\u0644\u0627\u062E\u062A\u064A\u0627\u0631" }),
+                        /* @__PURE__ */ jsx("div", { className: "text-sm", style: { color: C.textMuted }, children: "\u0627\u0644\u0635\u064A\u063A \u0627\u0644\u0645\u062F\u0639\u0648\u0645\u0629: .xlsx \xB7 .xls \xB7 .xlsm" }),
+                        /* @__PURE__ */ jsx(
+                          "input",
+                          {
+                            ref: inputRef,
+                            type: "file",
+                            accept: ".xlsx,.xls,.xlsm",
+                            className: "hidden",
+                            onChange: (e) => handleFile(e.target.files?.[0])
+                          }
+                        )
+                      ]
+                    }
+                  ),
+                  !loading && /* @__PURE__ */ jsxs("div", { className: "mt-5", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 mb-4", children: [
+              /* @__PURE__ */ jsx("div", { className: "flex-1", style: { height: 1, background: C.ivoryDark } }),
+              /* @__PURE__ */ jsx("span", { className: "text-xs font-bold", style: { color: C.textMuted }, children: "أو" }),
+              /* @__PURE__ */ jsx("div", { className: "flex-1", style: { height: 1, background: C.ivoryDark } })
+            ] }),
+            /* @__PURE__ */ jsx("button", { onClick: () => onParsed(DEMO_DATA), className: "w-full rounded-lg py-4 px-6 font-bold text-base transition-all", style: { background: C.primary, color: C.white, border: "none", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,74,37,0.18)" }, children: "عرض الداشبورد ببيانات توضيحية" }),
+            /* @__PURE__ */ jsx("div", { className: "text-xs text-center mt-3", style: { color: C.textMuted }, children: "بيانات افتراضية للعرض والتجربة فقط — لا تمثل أرقامًا حقيقية ولا تخص جهة فعلية" })
+          ] }),
+          loading && /* @__PURE__ */ jsxs("div", { className: "rounded-lg p-12 text-center", style: { background: C.ivory }, children: [
+                    /* @__PURE__ */ jsx(
+                      "div",
+                      {
+                        className: "inline-block w-12 h-12 mb-4",
+                        style: { border: `4px solid ${C.goldLight}`, borderTopColor: C.primary, borderRadius: "50%", animation: "spin 0.9s linear infinite" }
+                      }
+                    ),
+                    /* @__PURE__ */ jsx("div", { className: "text-base font-bold", style: { color: C.primaryDark }, children: "\u062C\u0627\u0631\u064A \u0645\u0639\u0627\u0644\u062C\u0629 \u0627\u0644\u0645\u0644\u0641 \u0645\u062D\u0644\u064A\u0627\u064B..." }),
+                    /* @__PURE__ */ jsx("div", { className: "text-xs mt-2", style: { color: C.textMuted }, children: "\u0644\u0645 \u064A\u062A\u0645 \u0631\u0641\u0639 \u0627\u0644\u0645\u0644\u0641 \u0644\u0623\u064A \u062E\u0627\u062F\u0645" })
+                  ] }),
+                  error && /* @__PURE__ */ jsxs(
+                    "div",
+                    {
+                      className: "mt-4 p-4 rounded-lg flex items-start gap-3",
+                      style: { background: "#FBE9E9", border: `1px solid ${C.catD}80`, borderRight: `4px solid ${C.catD}` },
+                      children: [
+                        /* @__PURE__ */ jsx(FileWarning, { size: 20, color: C.catD, className: "flex-shrink-0 mt-0.5" }),
+                        /* @__PURE__ */ jsxs("div", { children: [
+                          /* @__PURE__ */ jsx("div", { className: "font-bold text-sm mb-1", style: { color: C.catD }, children: "\u062A\u0639\u0630\u0651\u0631 \u0641\u062A\u062D \u0627\u0644\u0645\u0644\u0641" }),
+                          /* @__PURE__ */ jsx("div", { className: "text-sm", style: { color: C.text }, children: error })
+                        ] })
+                      ]
+                    }
+                  )
+                ] })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "rounded-lg p-5 flex items-start gap-3",
+              style: { background: C.goldLight + "30", border: `1px solid ${C.gold}80`, borderRight: `4px solid ${C.gold}` },
+              children: [
+                /* @__PURE__ */ jsx(Shield, { size: 22, color: C.primaryDark, className: "flex-shrink-0 mt-0.5" }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("div", { className: "font-bold mb-2", style: { color: C.primaryDark }, children: "\u0625\u0634\u0639\u0627\u0631 \u062E\u0635\u0648\u0635\u064A\u0629 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A" }),
+                  /* @__PURE__ */ jsxs("ul", { className: "text-sm space-y-1.5", style: { color: C.text }, children: [
+                    /* @__PURE__ */ jsxs("li", { className: "flex gap-2", children: [
+                      /* @__PURE__ */ jsx(CheckCircle2, { size: 16, color: C.primary, className: "flex-shrink-0 mt-0.5" }),
+                      /* @__PURE__ */ jsxs("span", { children: [
+                        "\u062A\u062A\u0645 \u0645\u0639\u0627\u0644\u062C\u0629 \u0627\u0644\u0645\u0644\u0641 ",
+                        /* @__PURE__ */ jsx("strong", { children: "\u0628\u0627\u0644\u0643\u0627\u0645\u0644 \u062F\u0627\u062E\u0644 \u0645\u062A\u0635\u0641\u062D\u0643" }),
+                        " \u0641\u0642\u0637"
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsxs("li", { className: "flex gap-2", children: [
+                      /* @__PURE__ */ jsx(CheckCircle2, { size: 16, color: C.primary, className: "flex-shrink-0 mt-0.5" }),
+                      /* @__PURE__ */ jsx("span", { children: "\u0644\u0627 \u064A\u062A\u0645 \u0631\u0641\u0639 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0644\u0623\u064A \u062E\u0627\u062F\u0645 \u0623\u0648 \u0633\u062D\u0627\u0628\u0629 \u0623\u0648 \u0645\u0646\u0635\u0629 \u0630\u0643\u0627\u0621 \u0627\u0635\u0637\u0646\u0627\u0639\u064A" })
+                    ] }),
+                    /* @__PURE__ */ jsxs("li", { className: "flex gap-2", children: [
+                      /* @__PURE__ */ jsx(CheckCircle2, { size: 16, color: C.primary, className: "flex-shrink-0 mt-0.5" }),
+                      /* @__PURE__ */ jsx("span", { children: "\u0625\u063A\u0644\u0627\u0642 \u0627\u0644\u062A\u0628\u0648\u064A\u0628 \u064A\u0645\u0633\u062D \u062C\u0645\u064A\u0639 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u062A\u0644\u0642\u0627\u0626\u064A\u0627\u064B" })
+                    ] }),
+                    /* @__PURE__ */ jsxs("li", { className: "flex gap-2", children: [
+                      /* @__PURE__ */ jsx(CheckCircle2, { size: 16, color: C.primary, className: "flex-shrink-0 mt-0.5" }),
+                      /* @__PURE__ */ jsx("span", { children: "\u0627\u0644\u062F\u0627\u0634\u0628\u0648\u0631\u062F \u0644\u0627 \u064A\u062D\u062A\u0648\u064A \u0639\u0644\u0649 \u0623\u064A \u0628\u064A\u0627\u0646\u0627\u062A \u0645\u062F\u0645\u062C\u0629 \u0642\u0628\u0644 \u0631\u0641\u0639 \u0627\u0644\u0645\u0644\u0641" })
+                    ] })
+                  ] })
+                ] })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "mt-6 rounded-lg p-5",
+              style: { background: C.white, border: `1px solid ${C.ivoryDark}` },
+              children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 mb-3", children: [
+                  /* @__PURE__ */ jsx(ScrollText, { size: 18, color: C.primary }),
+                  /* @__PURE__ */ jsx("div", { className: "font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u0623\u0648\u0631\u0627\u0642 \u0627\u0644\u0645\u062A\u0648\u0642\u0639\u0629 \u0641\u064A \u0645\u0644\u0641 \u0627\u0644\u0625\u0643\u0633\u0644" })
+                ] }),
+                /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-2 text-xs", style: { color: C.textMuted }, children: [
+                  "MCDA - \u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0634\u0627\u0645\u0644 (\u0625\u0644\u0632\u0627\u0645\u064A\u0629)",
+                  "\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0625\u0642\u0628\u0627\u0644",
+                  "\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0643\u0641\u0627\u0621\u0629 \u0627\u0644\u0645\u0627\u0644\u064A\u0629",
+                  "\u062A\u062D\u0644\u064A\u0644 \u0646\u0633\u0628 \u0627\u0644\u062A\u0648\u0638\u064A\u0641",
+                  "\u062A\u062D\u0644\u064A\u0644 \u0627\u062D\u062A\u064A\u0627\u062C \u0633\u0648\u0642 \u0627\u0644\u0639\u0645\u0644"
+                ].map((s, i) => /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: "flex items-center gap-2 px-2 py-1.5 rounded",
+                    style: { background: C.ivory, color: C.text },
+                    children: [
+                      /* @__PURE__ */ jsx("div", { className: "w-1.5 h-1.5 rounded-full", style: { background: C.gold } }),
+                      s
+                    ]
+                  },
+                  i
+                )) })
+              ]
+            }
+          )
+        ] })
+      ]
+    }
+  );
+};
+const Navbar = ({ onReset }) => {
+  const links = [
+    { id: "overview", label: "\u0646\u0638\u0631\u0629 \u0639\u0627\u0645\u0629" },
+    { id: "methodology", label: "\u0627\u0644\u0645\u0646\u0647\u062C\u064A\u0629" },
+    { id: "criteria", label: "\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0645\u0639\u0627\u064A\u064A\u0631" },
+    { id: "programs", label: "\u0627\u0644\u0628\u0631\u0627\u0645\u062C" },
+    { id: "scenarios", label: "\u0627\u0644\u0633\u064A\u0646\u0627\u0631\u064A\u0648\u0647\u0627\u062A" }
+  ];
+  const scroll = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  return /* @__PURE__ */ jsx(
+    "nav",
+    {
+      className: "sticky top-0 z-50 w-full shadow-md print:hidden",
+      style: {
+        background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`,
+        borderBottom: `2px solid ${C.gold}`
+      },
+      children: /* @__PURE__ */ jsxs("div", { className: "max-w-[1600px] mx-auto px-8 h-20 flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+          /* @__PURE__ */ jsx("img", { src: KAU_LOGO, alt: "KAU", style: { height: "50px", filter: "brightness(1.1)" } }),
+          /* @__PURE__ */ jsxs("div", { className: "text-white leading-tight", children: [
+            /* @__PURE__ */ jsx("div", { className: "text-base font-bold", children: "\u062C\u0627\u0645\u0639\u0629 \u0627\u0644\u0645\u0644\u0643 \u0639\u0628\u062F\u0627\u0644\u0639\u0632\u064A\u0632" }),
+            /* @__PURE__ */ jsx("div", { className: "text-xs", style: { color: C.goldLight }, children: "\u0627\u0644\u0643\u0644\u064A\u0629 \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u064A\u0629" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex gap-1 items-center", children: [
+          links.map((l) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: () => scroll(l.id),
+              className: "px-5 py-2 text-sm rounded transition-all duration-200 hover:bg-white/10",
+              style: { color: C.white, fontWeight: 500 },
+              children: l.label
+            },
+            l.id
+          )),
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              onClick: onReset,
+              className: "ml-4 px-3 py-2 rounded flex items-center gap-2 text-xs transition-all hover:bg-white/10",
+              style: { color: C.goldLight, fontWeight: 600, border: `1px solid ${C.gold}50` },
+              title: "\u0645\u0633\u062D \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0648\u0625\u0639\u0627\u062F\u0629 \u0631\u0641\u0639 \u0645\u0644\u0641",
+              children: [
+                /* @__PURE__ */ jsx(RefreshCw, { size: 14 }),
+                /* @__PURE__ */ jsx("span", { children: "\u062A\u063A\u064A\u064A\u0631 \u0627\u0644\u0645\u0644\u0641" })
+              ]
+            }
+          )
+        ] })
+      ] })
+    }
+  );
+};
+const Hero = ({ programs }) => {
+  const counts = useMemo(() => {
+    const c = { \u0623: 0, \u0628: 0, \u062C: 0, \u062F: 0 };
+    programs.forEach((p) => {
+      if (c[p.category] !== void 0) c[p.category]++;
+    });
+    return c;
+  }, [programs]);
+  return /* @__PURE__ */ jsxs(
+    "section",
+    {
+      id: "hero",
+      className: "relative pt-16 pb-20 px-8 overflow-hidden",
+      style: {
+        background: `radial-gradient(ellipse at top, ${C.ivory} 0%, ${C.white} 70%)`,
+        borderBottom: `1px solid ${C.ivoryDark}`
+      },
+      children: [
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "absolute top-8 right-8 w-24 h-24 opacity-20 print:hidden",
+            style: { borderTop: `2px solid ${C.gold}`, borderRight: `2px solid ${C.gold}` }
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "absolute top-8 left-8 w-24 h-24 opacity-20 print:hidden",
+            style: { borderTop: `2px solid ${C.gold}`, borderLeft: `2px solid ${C.gold}` }
+          }
+        ),
+        /* @__PURE__ */ jsxs("div", { className: "max-w-[1400px] mx-auto text-center relative", children: [
+          /* @__PURE__ */ jsx("div", { className: "flex justify-center mb-6", children: /* @__PURE__ */ jsx("img", { src: KAU_LOGO, alt: "KAU", style: { height: "120px" } }) }),
+          /* @__PURE__ */ jsx("div", { className: "text-xs tracking-[0.5em] mb-3", style: { color: C.gold, fontWeight: 700 }, children: "KING ABDULAZIZ UNIVERSITY \xB7 APPLIED COLLEGE" }),
+          /* @__PURE__ */ jsx("h1", { className: "text-5xl font-black mb-3 leading-tight", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0634\u0627\u0645\u0644 \u0644\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u062F\u0628\u0644\u0648\u0645" }),
+          /* @__PURE__ */ jsx("p", { className: "text-xl mb-2", style: { color: C.text, fontWeight: 500 }, children: "\u0627\u0644\u0643\u0644\u064A\u0629 \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u064A\u0629 | \u062C\u0627\u0645\u0639\u0629 \u0627\u0644\u0645\u0644\u0643 \u0639\u0628\u062F\u0627\u0644\u0639\u0632\u064A\u0632" }),
+          /* @__PURE__ */ jsx("p", { className: "text-base", style: { color: C.textMuted, fontWeight: 400 }, children: "\u0627\u0644\u0641\u062A\u0631\u0629 \u0627\u0644\u0632\u0645\u0646\u064A\u0629: 2023 \u2014 2026" }),
+          /* @__PURE__ */ jsx(GoldDivider, { width: "120px" }),
+          /* @__PURE__ */ jsx("div", { className: "grid grid-cols-4 gap-6 max-w-5xl mx-auto mt-10", children: [
+            { label: "\u0625\u062C\u0645\u0627\u0644\u064A \u0627\u0644\u0628\u0631\u0627\u0645\u062C", value: programs.length, sub: "\u0628\u0631\u0646\u0627\u0645\u062C \u062F\u0628\u0644\u0648\u0645", color: C.primaryDark, bg: C.ivory, icon: BookOpen },
+            { label: "\u0641\u0626\u0629 (\u0623) \u0645\u0645\u062A\u0627\u0632", value: counts.\u0623, sub: "\u0627\u0633\u062A\u0645\u0631\u0627\u0631 \u0648\u062A\u0637\u0648\u064A\u0631", color: C.catA, bg: catBg("\u0623"), icon: Award },
+            { label: "\u0641\u0626\u0629 (\u0628) \u062C\u064A\u062F", value: counts.\u0628, sub: "\u062A\u0637\u0648\u064A\u0631 \u0648\u0645\u062A\u0627\u0628\u0639\u0629", color: C.catB, bg: catBg("\u0628"), icon: TrendingUp },
+            { label: "\u0641\u0626\u0629 (\u062C) \u0648 (\u062F)", value: counts.\u062C + counts.\u062F, sub: "\u0645\u0631\u0627\u062C\u0639\u0629 \u0623\u0648 \u0625\u064A\u0642\u0627\u0641", color: C.catD, bg: catBg("\u062F"), icon: AlertTriangle }
+          ].map((kpi, i) => {
+            const Icon = kpi.icon;
+            return /* @__PURE__ */ jsx(Reveal, { delay: i * 100, children: /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: "p-6 rounded-lg text-right transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl",
+                style: {
+                  background: `linear-gradient(135deg, ${C.white} 0%, ${kpi.bg} 100%)`,
+                  border: `1px solid ${C.ivoryDark}`,
+                  borderTop: `3px solid ${kpi.color}`
+                },
+                children: /* @__PURE__ */ jsxs("div", { className: "flex items-start justify-between mb-3", children: [
+                  /* @__PURE__ */ jsxs("div", { children: [
+                    /* @__PURE__ */ jsx("div", { className: "text-5xl font-black mb-1", style: { color: kpi.color }, children: kpi.value }),
+                    /* @__PURE__ */ jsx("div", { className: "text-sm font-bold", style: { color: C.text }, children: kpi.label }),
+                    /* @__PURE__ */ jsx("div", { className: "text-xs mt-1", style: { color: C.textMuted }, children: kpi.sub })
+                  ] }),
+                  /* @__PURE__ */ jsx("div", { className: "p-3 rounded", style: { background: kpi.color + "15" }, children: /* @__PURE__ */ jsx(Icon, { size: 24, color: kpi.color, strokeWidth: 2 }) })
+                ] })
+              }
+            ) }, kpi.label);
+          }) })
+        ] })
+      ]
+    }
+  );
+};
+const Methodology = () => {
+  const criteria = [
+    { icon: Users, title: "\u0627\u0644\u0625\u0642\u0628\u0627\u0644", desc: "\u0645\u062A\u0648\u0633\u0637 \u0623\u0639\u062F\u0627\u062F \u0627\u0644\u0645\u0642\u0628\u0648\u0644\u064A\u0646 \u0641\u0635\u0644\u064A\u0627\u064B", sub: "\u0625\u062C\u0645\u0627\u0644\u064A \u0627\u0644\u0645\u0642\u0628\u0648\u0644\u064A\u0646 \xF7 \u0639\u062F\u062F \u0627\u0644\u0641\u0635\u0648\u0644" },
+    { icon: DollarSign, title: "\u0627\u0644\u0643\u0641\u0627\u0621\u0629 \u0627\u0644\u0645\u0627\u0644\u064A\u0629", desc: "\u0646\u0633\u0628\u0629 \u0627\u0644\u0645\u0628\u0644\u063A \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0644\u0645\u062E\u0635\u0635\u0627\u062A \u0627\u0644\u062A\u062F\u0631\u064A\u0633", sub: "\u0643\u0644\u0645\u0627 \u0627\u0646\u062E\u0641\u0636\u062A \u0627\u0644\u0646\u0633\u0628\u0629 \u0627\u0631\u062A\u0641\u0639\u062A \u0627\u0644\u0643\u0641\u0627\u0621\u0629" },
+    { icon: Briefcase, title: "\u0646\u0633\u0628 \u0627\u0644\u062A\u0648\u0638\u064A\u0641", desc: "\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0631\u0635\u062F \u0627\u0644\u0648\u0637\u0646\u064A \u0644\u0644\u0639\u0645\u0644 2025", sub: "\u0642\u0628\u0644 + \u062E\u0644\u0627\u0644 6 \u0648 12 \u0634\u0647\u0631 \u0645\u0646 \u0627\u0644\u062A\u062E\u0631\u062C" },
+    { icon: TrendingUp, title: "\u0627\u062D\u062A\u064A\u0627\u062C \u0633\u0648\u0642 \u0627\u0644\u0639\u0645\u0644", desc: "\u062A\u0648\u0642\u0639\u0627\u062A \u0627\u0644\u0645\u0647\u0646 2025 - 2034", sub: "\u062A\u0642\u0631\u064A\u0631 \u0627\u0644\u0645\u0631\u0635\u062F \u0627\u0644\u0648\u0637\u0646\u064A \u0644\u0644\u0639\u0645\u0644 (\u0646\u0648\u0641\u0645\u0628\u0631 2025)" }
+  ];
+  const tiers = [
+    { cat: "\u0623", range: "\u2265 2.5", label: "\u0645\u0645\u062A\u0627\u0632", action: "\u0627\u0633\u062A\u0645\u0631\u0627\u0631 \u0648\u062A\u0637\u0648\u064A\u0631" },
+    { cat: "\u0628", range: "\u2265 1.75", label: "\u062C\u064A\u062F", action: "\u062A\u0637\u0648\u064A\u0631 \u0648\u0645\u062A\u0627\u0628\u0639\u0629" },
+    { cat: "\u062C", range: "\u2265 1.0", label: "\u0645\u062A\u0648\u0633\u0637", action: "\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u0625\u0639\u0627\u062F\u0629 \u062A\u0642\u064A\u064A\u0645" },
+    { cat: "\u062F", range: "< 1.0", label: "\u0636\u0639\u064A\u0641", action: "\u0625\u064A\u0642\u0627\u0641 \u0623\u0648 \u0625\u0639\u0627\u062F\u0629 \u062A\u0635\u0645\u064A\u0645" }
+  ];
+  return /* @__PURE__ */ jsx("section", { id: "methodology", className: "py-20 px-8", style: { background: C.white }, children: /* @__PURE__ */ jsxs("div", { className: "max-w-[1400px] mx-auto", children: [
+    /* @__PURE__ */ jsx(
+      SectionTitle,
+      {
+        kicker: "MULTI-CRITERIA DECISION ANALYSIS",
+        title: "\u0627\u0644\u0645\u0646\u0647\u062C\u064A\u0629",
+        subtitle: "\u062A\u062D\u0644\u064A\u0644 \u0645\u062A\u0639\u062F\u062F \u0627\u0644\u0645\u0639\u0627\u064A\u064A\u0631 \u0628\u0623\u0631\u0628\u0639\u0629 \u0645\u062D\u0627\u0648\u0631 \u0645\u062A\u0633\u0627\u0648\u064A\u0629 \u0627\u0644\u0648\u0632\u0646 (25% \u0644\u0643\u0644 \u0645\u0639\u064A\u0627\u0631)"
+      }
+    ),
+    /* @__PURE__ */ jsx("div", { className: "grid grid-cols-4 gap-5 mb-12", children: criteria.map((c, i) => {
+      const Icon = c.icon;
+      return /* @__PURE__ */ jsx(Reveal, { delay: i * 100, children: /* @__PURE__ */ jsxs(Card, { className: "p-6 h-full", children: [
+        /* @__PURE__ */ jsx("div", { className: "w-12 h-12 rounded mb-4 flex items-center justify-center", style: { background: C.primary }, children: /* @__PURE__ */ jsx(Icon, { size: 22, color: C.white, strokeWidth: 2.2 }) }),
+        /* @__PURE__ */ jsx("div", { className: "text-xs font-bold mb-2", style: { color: C.gold }, children: "\u0648\u0632\u0646 25%" }),
+        /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-2", style: { color: C.primaryDark }, children: c.title }),
+        /* @__PURE__ */ jsx("p", { className: "text-sm leading-relaxed mb-2", style: { color: C.text }, children: c.desc }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs", style: { color: C.textMuted }, children: c.sub })
+      ] }) }, c.title);
+    }) }),
+    /* @__PURE__ */ jsx(Reveal, { children: /* @__PURE__ */ jsxs("div", { className: "rounded-lg overflow-hidden", style: { border: `1px solid ${C.ivoryDark}` }, children: [
+      /* @__PURE__ */ jsxs("div", { className: "px-6 py-4 flex items-center gap-3", style: { background: C.primary }, children: [
+        /* @__PURE__ */ jsx(ScrollText, { size: 20, color: C.white }),
+        /* @__PURE__ */ jsx("h3", { className: "text-white font-bold text-lg", children: "\u062C\u062F\u0648\u0644 \u0627\u0644\u062A\u0635\u0646\u064A\u0641 \u0627\u0644\u0646\u0647\u0627\u0626\u064A" })
+      ] }),
+      /* @__PURE__ */ jsxs("table", { className: "w-full", children: [
+        /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { background: C.ivory }, children: [
+          /* @__PURE__ */ jsx("th", { className: "px-6 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u0641\u0626\u0629" }),
+          /* @__PURE__ */ jsx("th", { className: "px-6 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u0646\u0642\u0627\u0637" }),
+          /* @__PURE__ */ jsx("th", { className: "px-6 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u0642\u064A\u064A\u0645" }),
+          /* @__PURE__ */ jsx("th", { className: "px-6 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u0625\u062C\u0631\u0627\u0621" })
+        ] }) }),
+        /* @__PURE__ */ jsx("tbody", { children: tiers.map((t) => /* @__PURE__ */ jsxs("tr", { className: "hover:bg-stone-50", style: { borderTop: `1px solid ${C.ivoryDark}` }, children: [
+          /* @__PURE__ */ jsx("td", { className: "px-6 py-4", children: /* @__PURE__ */ jsx(
+            "span",
+            {
+              className: "inline-flex items-center justify-center w-10 h-10 rounded font-black text-lg text-white",
+              style: { background: catColor(t.cat) },
+              children: t.cat
+            }
+          ) }),
+          /* @__PURE__ */ jsx("td", { className: "px-6 py-4 font-bold text-base", style: { color: C.text }, children: t.range }),
+          /* @__PURE__ */ jsx("td", { className: "px-6 py-4 font-medium", style: { color: catColor(t.cat) }, children: t.label }),
+          /* @__PURE__ */ jsx("td", { className: "px-6 py-4", style: { color: C.textMuted }, children: t.action })
+        ] }, t.cat)) })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsx(Reveal, { delay: 100, children: /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "mt-8 p-5 rounded-lg flex items-start gap-3",
+        style: { background: C.goldLight + "40", border: `1px solid ${C.gold}80` },
+        children: [
+          /* @__PURE__ */ jsx(Lightbulb, { size: 20, color: C.primaryDark, className: "mt-0.5 flex-shrink-0" }),
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("div", { className: "font-bold mb-1", style: { color: C.primaryDark }, children: "\u0645\u0644\u0627\u062D\u0638\u0629 \u0645\u0646\u0647\u062C\u064A\u0629" }),
+            /* @__PURE__ */ jsx("p", { className: "text-sm leading-relaxed", style: { color: C.text }, children: "\u0627\u0644\u0625\u0642\u0628\u0627\u0644 \u0648\u0627\u0644\u0643\u0641\u0627\u0621\u0629 \u0627\u0644\u0645\u0627\u0644\u064A\u0629 \u0645\u062D\u0633\u0648\u0628\u0627\u0646 \u0644\u0643\u0644 (\u062A\u062E\u0635\u0635 \xD7 \u0646\u0645\u0637) \u0643\u0645\u062A\u0648\u0633\u0637 \u0628\u064A\u0646 \u0634\u0637\u0631 \u0627\u0644\u0637\u0644\u0627\u0628 \u0648\u0634\u0637\u0631 \u0627\u0644\u0637\u0627\u0644\u0628\u0627\u062A. \u0627\u0644\u062A\u0648\u0638\u064A\u0641 \u0648\u0627\u062D\u062A\u064A\u0627\u062C \u0627\u0644\u0633\u0648\u0642 \u062B\u0627\u0628\u062A\u0627\u0646 \u0644\u0643\u0644 \u062A\u062E\u0635\u0635 \u0641\u064A \u0627\u0644\u0646\u0645\u0637\u064A\u0646." })
+          ] })
+        ]
+      }
+    ) })
+  ] }) });
+};
+const Overview = ({ programs }) => {
+  const counts = useMemo(() => {
+    const c = { \u0623: 0, \u0628: 0, \u062C: 0, \u062F: 0 };
+    programs.forEach((p) => {
+      if (c[p.category] !== void 0) c[p.category]++;
+    });
+    return c;
+  }, [programs]);
+  const stackData = useMemo(() => {
+    const init = () => ({ \u0623: 0, \u0628: 0, \u062C: 0, \u062F: 0 });
+    const remote = init(), evening = init();
+    programs.forEach((p) => {
+      const target = p.mode === "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F" ? remote : p.mode === "\u0627\u0646\u062A\u0638\u0627\u0645 \u0645\u0633\u0627\u0626\u064A" ? evening : null;
+      if (target && target[p.category] !== void 0) target[p.category]++;
+    });
+    return [
+      { mode: "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F", ...remote },
+      { mode: "\u0627\u0646\u062A\u0638\u0627\u0645 \u0645\u0633\u0627\u0626\u064A", ...evening }
+    ];
+  }, [programs]);
+  const remoteCount = programs.filter((p) => p.mode === "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F").length;
+  const eveningCount = programs.filter((p) => p.mode === "\u0627\u0646\u062A\u0638\u0627\u0645 \u0645\u0633\u0627\u0626\u064A").length;
+  const donutData = [
+    { name: "\u0641\u0626\u0629 \u0623", value: counts.\u0623, color: C.catA },
+    { name: "\u0641\u0626\u0629 \u0628", value: counts.\u0628, color: C.catB },
+    { name: "\u0641\u0626\u0629 \u062C", value: counts.\u062C, color: C.catC },
+    { name: "\u0641\u0626\u0629 \u062F", value: counts.\u062F, color: C.catD }
+  ];
+  const detailCards = [
+    { cat: "\u0623", count: counts.\u0623, label: "\u0645\u0645\u062A\u0627\u0632", recommendation: "\u0627\u0644\u0627\u0633\u062A\u0645\u0631\u0627\u0631 \u0648\u0627\u0644\u062A\u0639\u0632\u064A\u0632", action: "\u062A\u062E\u0635\u064A\u0635 \u0645\u0648\u0627\u0631\u062F \u0625\u0636\u0627\u0641\u064A\u0629 \u0648\u062A\u0637\u0648\u064A\u0631 \u0627\u0644\u0642\u062F\u0631\u0627\u062A" },
+    { cat: "\u0628", count: counts.\u0628, label: "\u062C\u064A\u062F", recommendation: "\u0627\u0644\u062A\u0637\u0648\u064A\u0631 \u0648\u0627\u0644\u0645\u062A\u0627\u0628\u0639\u0629 \u0627\u0644\u062F\u0648\u0631\u064A\u0629", action: "\u0627\u0633\u062A\u062B\u0645\u0627\u0631 \u0627\u0644\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0633\u062A\u0645\u0631 \u0648\u062A\u0639\u0632\u064A\u0632 \u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629" },
+    { cat: "\u062C", count: counts.\u062C, label: "\u0645\u062A\u0648\u0633\u0637", recommendation: "\u0645\u0631\u0627\u062C\u0639\u0629 \u062C\u0648\u0647\u0631\u064A\u0629", action: "\u0625\u0639\u0627\u062F\u0629 \u062A\u0642\u064A\u064A\u0645 \u0627\u0644\u062C\u062F\u0648\u0649 \u0648\u0648\u0636\u0639 \u062E\u0637\u0629 \u062A\u0637\u0648\u064A\u0631 \u0645\u0644\u0632\u0645\u0629" },
+    { cat: "\u062F", count: counts.\u062F, label: "\u0636\u0639\u064A\u0641", recommendation: "\u0625\u064A\u0642\u0627\u0641 \u0623\u0648 \u0625\u0639\u0627\u062F\u0629 \u062A\u0635\u0645\u064A\u0645", action: "\u062F\u0631\u0627\u0633\u0629 \u0642\u0631\u0627\u0631 \u0627\u0644\u0625\u064A\u0642\u0627\u0641 \u0623\u0648 \u0627\u0644\u062F\u0645\u062C \u0645\u0639 \u0628\u0631\u0627\u0645\u062C \u0623\u062E\u0631\u0649" }
+  ];
+  const examples = useMemo(() => {
+    const ex = { \u0623: [], \u0628: [], \u062C: [], \u062F: [] };
+    programs.forEach((p) => {
+      if (ex[p.category] && ex[p.category].length < 2) ex[p.category].push(p.name);
+    });
+    return ex;
+  }, [programs]);
+  return /* @__PURE__ */ jsx("section", { id: "overview", className: "py-20 px-8", style: { background: C.ivory }, children: /* @__PURE__ */ jsxs("div", { className: "max-w-[1400px] mx-auto", children: [
+    /* @__PURE__ */ jsx(
+      SectionTitle,
+      {
+        kicker: "OVERVIEW",
+        title: "\u0646\u0638\u0631\u0629 \u0639\u0627\u0645\u0629",
+        subtitle: `\u062A\u0648\u0632\u064A\u0639 \u0627\u0644\u0640 ${programs.length} \u0628\u0631\u0646\u0627\u0645\u062C \u0639\u0644\u0649 \u0627\u0644\u0641\u0626\u0627\u062A \u0627\u0644\u0623\u0631\u0628\u0639 \u0648\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0646\u0645\u0637\u064A\u0646`
+      }
+    ),
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-6 mb-10", children: [
+      /* @__PURE__ */ jsx(Reveal, { children: /* @__PURE__ */ jsxs(Card, { className: "p-6", children: [
+        /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u0648\u0632\u064A\u0639 \u0627\u0644\u0639\u0627\u0645 \u0644\u0644\u0628\u0631\u0627\u0645\u062C" }),
+        /* @__PURE__ */ jsxs("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: [
+          programs.length,
+          " \u0628\u0631\u0646\u0627\u0645\u062C \u0645\u0648\u0632\u0639\u0629 \u0639\u0644\u0649 \u0627\u0644\u0641\u0626\u0627\u062A \u0627\u0644\u0623\u0631\u0628\u0639"
+        ] }),
+        /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: 300, children: /* @__PURE__ */ jsxs(PieChart, { children: [
+          /* @__PURE__ */ jsx(
+            Pie,
+            {
+              data: donutData,
+              cx: "50%",
+              cy: "50%",
+              innerRadius: 70,
+              outerRadius: 110,
+              paddingAngle: 2,
+              dataKey: "value",
+              label: ({ name, value }) => `${name}: ${value}`,
+              labelLine: false,
+              children: donutData.map((d) => /* @__PURE__ */ jsx(Cell, { fill: d.color }, d.name))
+            }
+          ),
+          /* @__PURE__ */ jsx(Tooltip, {}),
+          /* @__PURE__ */ jsx(Legend, { wrapperStyle: { fontSize: "13px" } })
+        ] }) })
+      ] }) }),
+      /* @__PURE__ */ jsx(Reveal, { delay: 100, children: /* @__PURE__ */ jsxs(Card, { className: "p-6", children: [
+        /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u0648\u0632\u064A\u0639 \u062D\u0633\u0628 \u0646\u0645\u0637 \u0627\u0644\u062A\u0642\u062F\u064A\u0645" }),
+        /* @__PURE__ */ jsxs("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: [
+          "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F (",
+          remoteCount,
+          " \u0628\u0631\u0646\u0627\u0645\u062C) | \u0627\u0646\u062A\u0638\u0627\u0645 \u0645\u0633\u0627\u0626\u064A (",
+          eveningCount,
+          " \u0628\u0631\u0646\u0627\u0645\u062C)"
+        ] }),
+        /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: 300, children: /* @__PURE__ */ jsxs(BarChart, { data: stackData, layout: "vertical", children: [
+          /* @__PURE__ */ jsx(CartesianGrid, { strokeDasharray: "3 3", stroke: C.ivoryDark }),
+          /* @__PURE__ */ jsx(XAxis, { type: "number", tick: { fontSize: 12 } }),
+          /* @__PURE__ */ jsx(YAxis, { dataKey: "mode", type: "category", tick: { fontSize: 13 }, width: 110 }),
+          /* @__PURE__ */ jsx(Tooltip, {}),
+          /* @__PURE__ */ jsx(Legend, { wrapperStyle: { fontSize: "13px" } }),
+          /* @__PURE__ */ jsx(Bar, { dataKey: "\u0623", stackId: "a", fill: C.catA, name: "\u0641\u0626\u0629 \u0623" }),
+          /* @__PURE__ */ jsx(Bar, { dataKey: "\u0628", stackId: "a", fill: C.catB, name: "\u0641\u0626\u0629 \u0628" }),
+          /* @__PURE__ */ jsx(Bar, { dataKey: "\u062C", stackId: "a", fill: C.catC, name: "\u0641\u0626\u0629 \u062C" }),
+          /* @__PURE__ */ jsx(Bar, { dataKey: "\u062F", stackId: "a", fill: C.catD, name: "\u0641\u0626\u0629 \u062F" })
+        ] }) })
+      ] }) })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "grid grid-cols-4 gap-5", children: detailCards.map((d, i) => /* @__PURE__ */ jsx(Reveal, { delay: i * 80, children: /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "rounded-lg overflow-hidden h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl",
+        style: { background: C.white, border: `1px solid ${C.ivoryDark}` },
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "px-5 py-3 flex items-center justify-between", style: { background: catColor(d.cat) }, children: [
+            /* @__PURE__ */ jsxs("span", { className: "text-white font-bold", children: [
+              "\u0641\u0626\u0629 (",
+              d.cat,
+              ")"
+            ] }),
+            /* @__PURE__ */ jsx("span", { className: "text-white text-xs", children: d.label })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "p-5", children: [
+            /* @__PURE__ */ jsx("div", { className: "text-5xl font-black mb-3", style: { color: catColor(d.cat) }, children: d.count }),
+            /* @__PURE__ */ jsxs("div", { className: "mb-3 pb-3", style: { borderBottom: `1px solid ${C.ivoryDark}` }, children: [
+              /* @__PURE__ */ jsx("div", { className: "text-xs mb-1", style: { color: C.textMuted }, children: "\u0627\u0644\u062A\u0648\u0635\u064A\u0629" }),
+              /* @__PURE__ */ jsx("div", { className: "text-sm font-bold", style: { color: C.text }, children: d.recommendation })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "mb-3", children: [
+              /* @__PURE__ */ jsx("div", { className: "text-xs mb-1", style: { color: C.textMuted }, children: "\u0627\u0644\u0625\u062C\u0631\u0627\u0621 \u0627\u0644\u0645\u0642\u062A\u0631\u062D" }),
+              /* @__PURE__ */ jsx("div", { className: "text-xs leading-relaxed", style: { color: C.text }, children: d.action })
+            ] }),
+            examples[d.cat].length > 0 && /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("div", { className: "text-xs mb-1", style: { color: C.textMuted }, children: "\u0623\u0645\u062B\u0644\u0629" }),
+              /* @__PURE__ */ jsx("div", { className: "text-xs leading-relaxed", style: { color: C.text, fontStyle: "italic" }, children: examples[d.cat].join("\u060C ") })
+            ] })
+          ] })
+        ]
+      }
+    ) }, d.cat)) })
+  ] }) });
+};
+const CriteriaAnalysis = ({ data }) => {
+  const [tab, setTab] = useState(0);
+  const tabs = [
+    { icon: Users, label: "\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0625\u0642\u0628\u0627\u0644" },
+    { icon: DollarSign, label: "\u0627\u0644\u0643\u0641\u0627\u0621\u0629 \u0627\u0644\u0645\u0627\u0644\u064A\u0629" },
+    { icon: Briefcase, label: "\u0646\u0633\u0628 \u0627\u0644\u062A\u0648\u0638\u064A\u0641" },
+    { icon: TrendingUp, label: "\u0627\u062D\u062A\u064A\u0627\u062C \u0633\u0648\u0642 \u0627\u0644\u0639\u0645\u0644" }
+  ];
+  return /* @__PURE__ */ jsx("section", { id: "criteria", className: "py-20 px-8", style: { background: C.white }, children: /* @__PURE__ */ jsxs("div", { className: "max-w-[1400px] mx-auto", children: [
+    /* @__PURE__ */ jsx(
+      SectionTitle,
+      {
+        kicker: "DEEP-DIVE",
+        title: "\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u0623\u0631\u0628\u0639\u0629",
+        subtitle: "\u0639\u0631\u0636 \u062A\u0641\u0635\u064A\u0644\u064A \u0644\u0643\u0644 \u0645\u0639\u064A\u0627\u0631 \u0645\u0639 \u0645\u0624\u0634\u0631\u0627\u062A \u0648\u0645\u0644\u0627\u062D\u0638\u0627\u062A \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0629 \u0644\u062F\u0639\u0645 \u0627\u0644\u0642\u0631\u0627\u0631"
+      }
+    ),
+    /* @__PURE__ */ jsx("div", { className: "flex border-b-2 mb-8", style: { borderColor: C.ivoryDark }, children: tabs.map((t, i) => {
+      const Icon = t.icon;
+      const active = tab === i;
+      return /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setTab(i),
+          className: "px-6 py-4 flex items-center gap-2 transition-all duration-300 -mb-[2px]",
+          style: {
+            color: active ? C.primary : C.textMuted,
+            fontWeight: active ? 700 : 500,
+            fontSize: "15px",
+            borderBottom: active ? `3px solid ${C.gold}` : "3px solid transparent"
+          },
+          children: [
+            /* @__PURE__ */ jsx(Icon, { size: 18, strokeWidth: active ? 2.5 : 2 }),
+            t.label
+          ]
+        },
+        i
+      );
+    }) }),
+    /* @__PURE__ */ jsxs("div", { style: { animation: "fadeInUp 0.5s ease-out" }, children: [
+      tab === 0 && /* @__PURE__ */ jsx(TabDemand, { data }),
+      tab === 1 && /* @__PURE__ */ jsx(TabFinancial, { data }),
+      tab === 2 && /* @__PURE__ */ jsx(TabEmployment, { data }),
+      tab === 3 && /* @__PURE__ */ jsx(TabMarket, { data })
+    ] }, tab)
+  ] }) });
+};
+const NoSheetWarning = ({ sheetName }) => /* @__PURE__ */ jsxs(
+  "div",
+  {
+    className: "p-8 rounded-lg flex items-start gap-3",
+    style: { background: "#FFF7E6", border: `1px solid #E0A93D80`, borderRight: `4px solid #E0A93D` },
+    children: [
+      /* @__PURE__ */ jsx(FileWarning, { size: 22, color: "#E0A93D", className: "flex-shrink-0 mt-0.5" }),
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("div", { className: "font-bold mb-1", style: { color: "#7A5A1A" }, children: "\u0627\u0644\u0648\u0631\u0642\u0629 \u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631\u0629" }),
+        /* @__PURE__ */ jsxs("p", { className: "text-sm", style: { color: C.text }, children: [
+          "\u0648\u0631\u0642\u0629 ",
+          /* @__PURE__ */ jsxs("strong", { children: [
+            '"',
+            sheetName,
+            '"'
+          ] }),
+          " \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629 \u0641\u064A \u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0645\u0631\u0641\u0648\u0639\u060C \u0623\u0648 \u0644\u0645 \u062A\u062A\u0645\u0643\u0646 \u0645\u0646 \u0642\u0631\u0627\u0621\u062A\u0647\u0627 \u0628\u0634\u0643\u0644 \u0635\u062D\u064A\u062D. \u062A\u062D\u0642\u0642 \u0645\u0646 \u0648\u062C\u0648\u062F \u0627\u0644\u0648\u0631\u0642\u0629 \u0628\u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0635\u062D\u064A\u062D \u0641\u064A \u0645\u0644\u0641 \u0627\u0644\u0625\u0643\u0633\u0644."
+        ] })
+      ] })
+    ]
+  }
+);
+const TabDemand = ({ data }) => {
+  if (!data.demand) return /* @__PURE__ */ jsx(NoSheetWarning, { sheetName: SHEET_NAMES.demand });
+  const { top10, bottom5 } = data.demand;
+  const topData = top10.map((t) => ({ name: t.label, value: t.value }));
+  const bottomLabel = (v, mode) => {
+    if (mode === "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F") {
+      if (v >= 150) return "\u0639\u0627\u0644\u064A \u062C\u062F\u0627\u064B";
+      if (v >= 120) return "\u0639\u0627\u0644\u064A";
+      if (v >= 90) return "\u0645\u062A\u0648\u0633\u0637";
+      if (v >= 60) return "\u0645\u0646\u062E\u0641\u0636";
+      return "\u0645\u0646\u062E\u0641\u0636 \u062C\u062F\u0627\u064B";
+    } else {
+      if (v > 70) return "\u0639\u0627\u0644\u064A \u062C\u062F\u0627\u064B";
+      if (v >= 50) return "\u0639\u0627\u0644\u064A";
+      if (v >= 40) return "\u0645\u062A\u0648\u0633\u0637";
+      return "\u0645\u0646\u062E\u0641\u0636";
+    }
+  };
+  return /* @__PURE__ */ jsxs("div", { children: [
+    /* @__PURE__ */ jsxs("p", { className: "text-base leading-relaxed mb-6", style: { color: C.text }, children: [
+      "\u064A\u0642\u064A\u0633 \u0647\u0630\u0627 \u0627\u0644\u0645\u0639\u064A\u0627\u0631 ",
+      /* @__PURE__ */ jsx("strong", { children: "\u0645\u062A\u0648\u0633\u0637 \u0623\u0639\u062F\u0627\u062F \u0627\u0644\u0645\u0642\u0628\u0648\u0644\u064A\u0646 \u0641\u0635\u0644\u064A\u0627\u064B" }),
+      " \u0644\u0643\u0644 \u0628\u0631\u0646\u0627\u0645\u062C\u060C \u0648\u064A\u064F\u062D\u0633\u0628 \u0643\u0625\u062C\u0645\u0627\u0644\u064A \u0627\u0644\u0645\u0642\u0628\u0648\u0644\u064A\u0646 \xF7 \u0639\u062F\u062F \u0627\u0644\u0641\u0635\u0648\u0644 \u0627\u0644\u062A\u064A \u0641\u064F\u062A\u062D \u0641\u064A\u0647\u0627 \u0627\u0644\u0642\u0628\u0648\u0644."
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-4 mb-8", children: [
+      /* @__PURE__ */ jsxs(Card, { className: "p-5", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-xs font-bold mb-3 tracking-wide", style: { color: C.gold }, children: "\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F" }),
+        /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: [
+          { l: "\u0639\u0627\u0644\u064A \u062C\u062F\u0627\u064B", v: "\u2265 150", c: C.catA },
+          { l: "\u0639\u0627\u0644\u064A", v: "120-149", c: C.catB },
+          { l: "\u0645\u062A\u0648\u0633\u0637", v: "90-119", c: C.catC },
+          { l: "\u0645\u0646\u062E\u0641\u0636", v: "60-89", c: "#D67A3A" },
+          { l: "\u0645\u0646\u062E\u0641\u0636 \u062C\u062F\u0627\u064B", v: "< 60", c: C.catD }
+        ].map((t) => /* @__PURE__ */ jsxs(
+          "div",
+          {
+            className: "px-3 py-1.5 rounded text-xs",
+            style: { background: t.c + "15", color: t.c, border: `1px solid ${t.c}40`, fontWeight: 600 },
+            children: [
+              t.l,
+              " ",
+              /* @__PURE__ */ jsxs("span", { style: { color: C.textMuted, fontWeight: 500 }, children: [
+                "\xB7 ",
+                t.v
+              ] })
+            ]
+          },
+          t.l
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxs(Card, { className: "p-5", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-xs font-bold mb-3 tracking-wide", style: { color: C.gold }, children: "\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0645 \u0627\u0644\u0645\u0633\u0627\u0626\u064A" }),
+        /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: [
+          { l: "\u0639\u0627\u0644\u064A \u062C\u062F\u0627\u064B", v: "> 70", c: C.catA },
+          { l: "\u0639\u0627\u0644\u064A", v: "50-70", c: C.catB },
+          { l: "\u0645\u062A\u0648\u0633\u0637", v: "40-49", c: C.catC },
+          { l: "\u0645\u0646\u062E\u0641\u0636", v: "< 40", c: C.catD }
+        ].map((t) => /* @__PURE__ */ jsxs(
+          "div",
+          {
+            className: "px-3 py-1.5 rounded text-xs",
+            style: { background: t.c + "15", color: t.c, border: `1px solid ${t.c}40`, fontWeight: 600 },
+            children: [
+              t.l,
+              " ",
+              /* @__PURE__ */ jsxs("span", { style: { color: C.textMuted, fontWeight: 500 }, children: [
+                "\xB7 ",
+                t.v
+              ] })
+            ]
+          },
+          t.l
+        )) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs(Card, { className: "p-6 mb-8", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.primaryDark }, children: "\u0623\u0639\u0644\u0649 10 \u0628\u0631\u0627\u0645\u062C \u0625\u0642\u0628\u0627\u0644\u0627\u064B (\u0645\u062A\u0648\u0633\u0637 \u0641\u0635\u0644\u064A)" }),
+      /* @__PURE__ */ jsx("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: "\u0645\u062A\u0648\u0633\u0637 \u0628\u064A\u0646 \u0627\u0644\u0634\u0637\u0631\u064A\u0646" }),
+      /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: 400, children: /* @__PURE__ */ jsxs(BarChart, { data: topData, layout: "vertical", margin: { right: 50, left: 0 }, children: [
+        /* @__PURE__ */ jsx(CartesianGrid, { strokeDasharray: "3 3", stroke: C.ivoryDark }),
+        /* @__PURE__ */ jsx(XAxis, { type: "number", tick: { fontSize: 12 } }),
+        /* @__PURE__ */ jsx(YAxis, { dataKey: "name", type: "category", tick: { fontSize: 12 }, width: 200 }),
+        /* @__PURE__ */ jsx(Tooltip, { cursor: { fill: C.ivory } }),
+        /* @__PURE__ */ jsx(Bar, { dataKey: "value", fill: C.primary, radius: [0, 4, 4, 0], children: /* @__PURE__ */ jsx(LabelList, { dataKey: "value", position: "right", style: { fontSize: 12, fontWeight: 600, fill: C.primaryDark } }) })
+      ] }) })
+    ] }),
+    /* @__PURE__ */ jsxs(Card, { className: "p-6 mb-8", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.catD }, children: "\u0623\u062F\u0646\u0649 5 \u0628\u0631\u0627\u0645\u062C \u0625\u0642\u0628\u0627\u0644\u0627\u064B" }),
+      /* @__PURE__ */ jsx("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: "\u0628\u0631\u0627\u0645\u062C \u0645\u0631\u0634\u062D\u0629 \u0644\u0625\u0639\u0627\u062F\u0629 \u0627\u0644\u0646\u0638\u0631" }),
+      /* @__PURE__ */ jsxs("table", { className: "w-full", children: [
+        /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { background: C.ivory }, children: [
+          /* @__PURE__ */ jsx("th", { className: "px-4 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u062E\u0635\u0635" }),
+          /* @__PURE__ */ jsx("th", { className: "px-4 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u0645\u062A\u0648\u0633\u0637 \u0627\u0644\u0641\u0635\u0644\u064A" }),
+          /* @__PURE__ */ jsx("th", { className: "px-4 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u0642\u064A\u064A\u0645" })
+        ] }) }),
+        /* @__PURE__ */ jsx("tbody", { children: bottom5.map((b, i) => /* @__PURE__ */ jsxs("tr", { className: "hover:bg-stone-50", style: { borderTop: `1px solid ${C.ivoryDark}` }, children: [
+          /* @__PURE__ */ jsx("td", { className: "px-4 py-3 text-sm", style: { color: C.text }, children: b.label }),
+          /* @__PURE__ */ jsxs("td", { className: "px-4 py-3", children: [
+            /* @__PURE__ */ jsx("span", { className: "font-bold text-base", style: { color: C.catD }, children: b.value }),
+            /* @__PURE__ */ jsx("span", { className: "text-xs mx-1", style: { color: C.textMuted }, children: "\u0637\u0627\u0644\u0628" })
+          ] }),
+          /* @__PURE__ */ jsx("td", { className: "px-4 py-3 text-sm", style: { color: C.catD, fontWeight: 600 }, children: bottomLabel(b.value, b.mode) })
+        ] }, i)) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx(InsightBox, { type: "gold", text: /* @__PURE__ */ jsxs(Fragment, { children: [
+      "\u0627\u0644\u0625\u0642\u0628\u0627\u0644 \u064A\u062A\u0631\u0643\u0632 \u0641\u064A ",
+      /* @__PURE__ */ jsxs("strong", { children: [
+        top10.slice(0, 5).length,
+        " \u0628\u0631\u0627\u0645\u062C"
+      ] }),
+      " \u0631\u0626\u064A\u0633\u064A\u0629 (",
+      top10.slice(0, 5).map((t) => t.name).join("\u060C "),
+      "). \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u0630\u0627\u062A \u0627\u0644\u0625\u0642\u0628\u0627\u0644 \u0627\u0644\u0623\u0642\u0644 \u0645\u0646 60 \u0637\u0627\u0644\u0628 \u0641\u0635\u0644\u064A\u0627\u064B \u062A\u0633\u062A\u062F\u0639\u064A \u0645\u0631\u0627\u062C\u0639\u0629 \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0629 \u0627\u0644\u062A\u0633\u0648\u064A\u0642 \u0648\u062A\u0642\u064A\u064A\u0645 \u062C\u062F\u0648\u0649 \u0627\u0644\u0627\u0633\u062A\u0645\u0631\u0627\u0631."
+    ] }) })
+  ] });
+};
+const TabFinancial = ({ data }) => {
+  const dist = useMemo(() => {
+    const c = { "\u0639\u0627\u0644\u064A\u0629": 0, "\u0645\u062A\u0648\u0633\u0637\u0629": 0, "\u0645\u0646\u062E\u0641\u0636\u0629": 0, "\u063A\u064A\u0631 \u0645\u064F\u0634\u063A\u064E\u0651\u0644": 0 };
+    data.programs.forEach((p) => {
+      if (c[p.financial] !== void 0) c[p.financial]++;
+    });
+    return [
+      { name: "\u0643\u0641\u0627\u0621\u0629 \u0639\u0627\u0644\u064A\u0629", count: c["\u0639\u0627\u0644\u064A\u0629"], color: C.catA },
+      { name: "\u0643\u0641\u0627\u0621\u0629 \u0645\u062A\u0648\u0633\u0637\u0629", count: c["\u0645\u062A\u0648\u0633\u0637\u0629"], color: C.catC },
+      { name: "\u0643\u0641\u0627\u0621\u0629 \u0645\u0646\u062E\u0641\u0636\u0629", count: c["\u0645\u0646\u062E\u0641\u0636\u0629"], color: C.catD },
+      { name: "\u063A\u064A\u0631 \u0645\u064F\u0634\u063A\u064E\u0651\u0644", count: c["\u063A\u064A\u0631 \u0645\u064F\u0634\u063A\u064E\u0651\u0644"], color: C.textMuted }
+    ];
+  }, [data.programs]);
+  if (!data.financial) {
+    return /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx(NoSheetWarning, { sheetName: SHEET_NAMES.financial }),
+      /* @__PURE__ */ jsx("div", { className: "mt-6", children: /* @__PURE__ */ jsxs(Card, { className: "p-6", children: [
+        /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.primaryDark }, children: "\u062A\u0648\u0632\u064A\u0639 \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u062D\u0633\u0628 \u0627\u0644\u0643\u0641\u0627\u0621\u0629" }),
+        /* @__PURE__ */ jsx("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: "\u0645\u062D\u0633\u0648\u0628 \u0645\u0646 \u0648\u0631\u0642\u0629 MCDA" }),
+        /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: 280, children: /* @__PURE__ */ jsxs(BarChart, { data: dist, children: [
+          /* @__PURE__ */ jsx(CartesianGrid, { strokeDasharray: "3 3", stroke: C.ivoryDark }),
+          /* @__PURE__ */ jsx(XAxis, { dataKey: "name", tick: { fontSize: 13 } }),
+          /* @__PURE__ */ jsx(YAxis, { tick: { fontSize: 12 } }),
+          /* @__PURE__ */ jsx(Tooltip, { cursor: { fill: C.ivory } }),
+          /* @__PURE__ */ jsxs(Bar, { dataKey: "count", radius: [6, 6, 0, 0], children: [
+            dist.map((d, i) => /* @__PURE__ */ jsx(Cell, { fill: d.color }, i)),
+            /* @__PURE__ */ jsx(LabelList, { dataKey: "count", position: "top", style: { fontSize: 14, fontWeight: 700, fill: C.primaryDark } })
+          ] })
+        ] }) })
+      ] }) })
+    ] });
+  }
+  const { efficient, inefficient } = data.financial;
+  const highCount = dist[0].count;
+  const notRunCount = dist[3].count;
+  return /* @__PURE__ */ jsxs("div", { children: [
+    /* @__PURE__ */ jsxs("p", { className: "text-base leading-relaxed mb-6", style: { color: C.text }, children: [
+      "\u064A\u0642\u064A\u0633 \u0647\u0630\u0627 \u0627\u0644\u0645\u0639\u064A\u0627\u0631 ",
+      /* @__PURE__ */ jsx("strong", { children: "\u0646\u0633\u0628\u0629 \u0627\u0644\u0645\u0628\u0644\u063A \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0644\u0645\u062E\u0635\u0635\u0627\u062A \u0627\u0644\u062A\u062F\u0631\u064A\u0633" }),
+      " (\u0627\u0644\u0645\u0628\u0644\u063A \u0627\u0644\u0645\u0635\u0631\u0648\u0641 \u0639\u0644\u0649 \u0634\u0639\u0628 \u0627\u0644\u062A\u062F\u0631\u064A\u0633 \xF7 \u0625\u062C\u0645\u0627\u0644\u064A \u0627\u0644\u0645\u062E\u0635\u0635\u0627\u062A \u0627\u0644\u0645\u0627\u0644\u064A\u0629 \u0644\u0644\u0628\u0631\u0646\u0627\u0645\u062C). \u0643\u0644\u0645\u0627 \u0627\u0646\u062E\u0641\u0636\u062A \u0627\u0644\u0646\u0633\u0628\u0629\u060C \u0627\u0631\u062A\u0641\u0639\u062A \u0627\u0644\u0643\u0641\u0627\u0621\u0629 \u0627\u0644\u0645\u0627\u0644\u064A\u0629."
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-4 mb-8", children: [
+      /* @__PURE__ */ jsxs(Card, { className: "p-5", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-xs font-bold mb-3 tracking-wide", style: { color: C.gold }, children: "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F" }),
+        /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: [
+          { l: "\u0639\u0627\u0644\u064A\u0629", v: "\u2264 30%", c: C.catA },
+          { l: "\u0645\u062A\u0648\u0633\u0637\u0629", v: "30-35%", c: C.catC },
+          { l: "\u0645\u0646\u062E\u0641\u0636\u0629", v: "> 35%", c: C.catD }
+        ].map((t) => /* @__PURE__ */ jsxs(
+          "div",
+          {
+            className: "px-3 py-1.5 rounded text-xs",
+            style: { background: t.c + "15", color: t.c, border: `1px solid ${t.c}40`, fontWeight: 600 },
+            children: [
+              t.l,
+              " ",
+              /* @__PURE__ */ jsxs("span", { style: { color: C.textMuted }, children: [
+                "\xB7 ",
+                t.v
+              ] })
+            ]
+          },
+          t.l
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxs(Card, { className: "p-5", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-xs font-bold mb-3 tracking-wide", style: { color: C.gold }, children: "\u0627\u0646\u062A\u0638\u0627\u0645 \u0645\u0633\u0627\u0626\u064A" }),
+        /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: [
+          { l: "\u0639\u0627\u0644\u064A\u0629", v: "\u2264 35%", c: C.catA },
+          { l: "\u0645\u062A\u0648\u0633\u0637\u0629", v: "35-40%", c: C.catC },
+          { l: "\u0645\u0646\u062E\u0641\u0636\u0629", v: "\u2265 40%", c: C.catD },
+          { l: "\u063A\u064A\u0631 \u0645\u064F\u0634\u063A\u064E\u0651\u0644", v: "0%", c: C.textMuted }
+        ].map((t) => /* @__PURE__ */ jsxs(
+          "div",
+          {
+            className: "px-3 py-1.5 rounded text-xs",
+            style: { background: t.c + "15", color: t.c, border: `1px solid ${t.c}40`, fontWeight: 600 },
+            children: [
+              t.l,
+              " ",
+              /* @__PURE__ */ jsxs("span", { style: { color: C.textMuted }, children: [
+                "\xB7 ",
+                t.v
+              ] })
+            ]
+          },
+          t.l
+        )) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs(Card, { className: "p-6 mb-8", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.primaryDark }, children: "\u062A\u0648\u0632\u064A\u0639 \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u062D\u0633\u0628 \u0627\u0644\u0643\u0641\u0627\u0621\u0629" }),
+      /* @__PURE__ */ jsx("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: "\u0639\u062F\u062F \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u0641\u064A \u0643\u0644 \u0645\u0633\u062A\u0648\u0649" }),
+      /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: 280, children: /* @__PURE__ */ jsxs(BarChart, { data: dist, children: [
+        /* @__PURE__ */ jsx(CartesianGrid, { strokeDasharray: "3 3", stroke: C.ivoryDark }),
+        /* @__PURE__ */ jsx(XAxis, { dataKey: "name", tick: { fontSize: 13 } }),
+        /* @__PURE__ */ jsx(YAxis, { tick: { fontSize: 12 } }),
+        /* @__PURE__ */ jsx(Tooltip, { cursor: { fill: C.ivory } }),
+        /* @__PURE__ */ jsxs(Bar, { dataKey: "count", radius: [6, 6, 0, 0], children: [
+          dist.map((d, i) => /* @__PURE__ */ jsx(Cell, { fill: d.color }, i)),
+          /* @__PURE__ */ jsx(LabelList, { dataKey: "count", position: "top", style: { fontSize: 14, fontWeight: 700, fill: C.primaryDark } })
+        ] })
+      ] }) })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-6 mb-8", children: [
+      /* @__PURE__ */ jsxs(Card, { className: "p-6", children: [
+        /* @__PURE__ */ jsx("h3", { className: "text-base font-bold mb-3", style: { color: C.catA }, children: "\u2713 \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u0623\u0643\u062B\u0631 \u0643\u0641\u0627\u0621\u0629 (5 \u0628\u0631\u0627\u0645\u062C)" }),
+        /* @__PURE__ */ jsx("table", { className: "w-full text-sm", children: /* @__PURE__ */ jsx("tbody", { children: efficient.map((e, i) => /* @__PURE__ */ jsxs("tr", { style: { borderTop: i ? `1px solid ${C.ivoryDark}` : "none" }, children: [
+          /* @__PURE__ */ jsx("td", { className: "py-2.5", style: { color: C.text }, children: e.label }),
+          /* @__PURE__ */ jsxs("td", { className: "py-2.5 text-left font-bold", style: { color: C.catA, width: "60px" }, children: [
+            e.pct,
+            "%"
+          ] })
+        ] }, i)) }) })
+      ] }),
+      /* @__PURE__ */ jsxs(Card, { className: "p-6", children: [
+        /* @__PURE__ */ jsx("h3", { className: "text-base font-bold mb-3", style: { color: C.catD }, children: "\u2717 \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u0623\u0642\u0644 \u0643\u0641\u0627\u0621\u0629 (5 \u0628\u0631\u0627\u0645\u062C \u062A\u0633\u062A\u0648\u062C\u0628 \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629)" }),
+        /* @__PURE__ */ jsx("table", { className: "w-full text-sm", children: /* @__PURE__ */ jsx("tbody", { children: inefficient.map((e, i) => /* @__PURE__ */ jsxs("tr", { style: { borderTop: i ? `1px solid ${C.ivoryDark}` : "none" }, children: [
+          /* @__PURE__ */ jsx("td", { className: "py-2.5", style: { color: C.text }, children: e.label }),
+          /* @__PURE__ */ jsxs("td", { className: "py-2.5 text-left font-bold", style: { color: C.catD, width: "60px" }, children: [
+            e.pct,
+            "%"
+          ] })
+        ] }, i)) }) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx(InsightBox, { type: "gold", text: /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsxs("strong", { children: [
+        highCount,
+        " \u0628\u0631\u0646\u0627\u0645\u062C"
+      ] }),
+      " \u062A\u062D\u0642\u0642 \u0643\u0641\u0627\u0621\u0629 \u0645\u0627\u0644\u064A\u0629 \u0639\u0627\u0644\u064A\u0629\u060C \u0644\u0643\u0646 ",
+      /* @__PURE__ */ jsxs("strong", { children: [
+        notRunCount,
+        " \u0628\u0631\u0646\u0627\u0645\u062C"
+      ] }),
+      " \u0644\u0645 \u062A\u064F\u0634\u063A\u064E\u0651\u0644 \u0623\u0635\u0644\u0627\u064B \u0641\u064A \u0627\u0644\u0641\u0635\u0644\u064A\u0646 \u0627\u0644\u0623\u062E\u064A\u0631\u064A\u0646\u060C \u0645\u0645\u0627 \u064A\u0639\u0646\u064A \u0647\u062F\u0631 \u0641\u064A \u0627\u0644\u0645\u0648\u0627\u0631\u062F \u0627\u0644\u0645\u062E\u0635\u0635\u0629. \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u0630\u0627\u062A \u0627\u0644\u0646\u0633\u0628\u0629 \u0627\u0644\u0639\u0627\u0644\u064A\u0629 \u062A\u062D\u062A\u0627\u062C \u0625\u0639\u0627\u062F\u0629 \u0647\u064A\u0643\u0644\u0629 \u0644\u0634\u0639\u0628 \u0627\u0644\u062A\u062F\u0631\u064A\u0633 \u0623\u0648 \u062F\u0645\u062C \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u0645\u062A\u0634\u0627\u0628\u0647\u0629."
+    ] }) })
+  ] });
+};
+const TabEmployment = ({ data }) => {
+  if (!data.employment) return /* @__PURE__ */ jsx(NoSheetWarning, { sheetName: SHEET_NAMES.employment });
+  const records = data.employment;
+  const colorByTier = (t) => t === "\u0645\u0631\u0636\u064A" ? C.catA : t === "\u0645\u062A\u0648\u0633\u0637" ? C.catC : C.catD;
+  const empNames = new Set(records.map((r) => r.name));
+  const noStat = data.programs.map((p) => p.name).filter((n, i, arr) => arr.indexOf(n) === i).filter((n) => !empNames.has(n));
+  return /* @__PURE__ */ jsxs("div", { children: [
+    /* @__PURE__ */ jsxs("p", { className: "text-base leading-relaxed mb-6", style: { color: C.text }, children: [
+      "\u062A\u0633\u062A\u0646\u062F \u0646\u0633\u0628 \u0627\u0644\u062A\u0648\u0638\u064A\u0641 \u0625\u0644\u0649 \u0625\u062D\u0635\u0627\u0626\u064A\u0629 ",
+      /* @__PURE__ */ jsx("strong", { children: "\u0627\u0644\u0645\u0631\u0635\u062F \u0627\u0644\u0648\u0637\u0646\u064A \u0644\u0644\u0639\u0645\u0644 \u0644\u0639\u0627\u0645 2025" }),
+      "\u060C \u0648\u062A\u0634\u0645\u0644: \u0627\u0644\u0645\u0648\u0638\u0641\u064A\u0646 \u0642\u0628\u0644 \u0627\u0644\u062A\u062E\u0631\u062C + \u062E\u0644\u0627\u0644 6 \u0623\u0634\u0647\u0631 \u0645\u0646 \u0627\u0644\u062A\u062E\u0631\u062C + \u062E\u0644\u0627\u0644 12 \u0634\u0647\u0631\u0627\u064B \u0645\u0646 \u0627\u0644\u062A\u062E\u0631\u062C."
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-3 mb-8", children: [
+      { l: "\u0645\u0631\u0636\u064A", v: "\u2265 75%", c: C.catA },
+      { l: "\u0645\u062A\u0648\u0633\u0637", v: "50% - 74%", c: C.catC },
+      { l: "\u0645\u0646\u062E\u0641\u0636", v: "< 50%", c: C.catD },
+      { l: "\u0644\u0627 \u062A\u0648\u062C\u062F \u0625\u062D\u0635\u0627\u0626\u064A\u0629", v: `${noStat.length} \u062A\u062E\u0635\u0635`, c: C.textMuted }
+    ].map((t) => /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "px-4 py-2 rounded",
+        style: { background: t.c + "15", color: t.c, border: `1px solid ${t.c}40`, fontWeight: 600 },
+        children: [
+          t.l,
+          " ",
+          /* @__PURE__ */ jsxs("span", { className: "text-xs mx-1", style: { color: C.textMuted }, children: [
+            "\xB7 ",
+            t.v
+          ] })
+        ]
+      },
+      t.l
+    )) }),
+    /* @__PURE__ */ jsxs(Card, { className: "p-6 mb-8", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u062E\u0635\u0635\u0627\u062A \u062D\u0633\u0628 \u0646\u0633\u0628\u0629 \u0627\u0644\u062A\u0648\u0638\u064A\u0641" }),
+      /* @__PURE__ */ jsxs("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: [
+        "\u0645\u0631\u062A\u0628\u0629 \u062A\u0646\u0627\u0632\u0644\u064A\u0627\u064B (",
+        records.length,
+        " \u062A\u062E\u0635\u0635 \u0628\u0625\u062D\u0635\u0627\u0626\u064A\u0629 \u0631\u0633\u0645\u064A\u0629)"
+      ] }),
+      /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: Math.max(400, records.length * 28), children: /* @__PURE__ */ jsxs(BarChart, { data: records, layout: "vertical", margin: { right: 60, left: 0 }, children: [
+        /* @__PURE__ */ jsx(CartesianGrid, { strokeDasharray: "3 3", stroke: C.ivoryDark }),
+        /* @__PURE__ */ jsx(XAxis, { type: "number", tick: { fontSize: 12 }, domain: [0, 80] }),
+        /* @__PURE__ */ jsx(YAxis, { dataKey: "name", type: "category", tick: { fontSize: 11 }, width: 150 }),
+        /* @__PURE__ */ jsx(
+          Tooltip,
+          {
+            cursor: { fill: C.ivory },
+            formatter: (v, n, p) => [`${v}%${p.payload.graduates ? " (" + p.payload.graduates + " \u062E\u0631\u064A\u062C)" : ""}`, p.payload.tier || ""]
+          }
+        ),
+        /* @__PURE__ */ jsxs(Bar, { dataKey: "value", radius: [0, 4, 4, 0], children: [
+          records.map((d, i) => /* @__PURE__ */ jsx(Cell, { fill: colorByTier(d.tier) }, i)),
+          /* @__PURE__ */ jsx(
+            LabelList,
+            {
+              dataKey: "value",
+              position: "right",
+              style: { fontSize: 11, fontWeight: 600, fill: C.text },
+              formatter: (v) => `${v}%`
+            }
+          )
+        ] })
+      ] }) })
+    ] }),
+    noStat.length > 0 && /* @__PURE__ */ jsx(InsightBox, { type: "warn", title: "\u062A\u0646\u0648\u064A\u0647 \u0645\u0647\u0645", text: /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsxs("strong", { children: [
+        noStat.length,
+        " \u062A\u062E\u0635\u0635"
+      ] }),
+      " \u0644\u0627 \u062A\u062A\u0648\u0641\u0631 \u0644\u0647\u0627 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0641\u064A \u0627\u0644\u0645\u0631\u0635\u062F \u0627\u0644\u0648\u0637\u0646\u064A \u0644\u0644\u0639\u0645\u0644: ",
+      noStat.join("\u060C "),
+      ". \u0647\u0630\u0647 \u0627\u0644\u062A\u062E\u0635\u0635\u0627\u062A \u0644\u0645 \u062A\u062D\u0635\u0644 \u0639\u0644\u0649 \u0646\u0642\u0627\u0637 \u0641\u064A \u0645\u0639\u064A\u0627\u0631 \u0627\u0644\u062A\u0648\u0638\u064A\u0641."
+    ] }) }),
+    /* @__PURE__ */ jsx("div", { className: "mt-6", children: /* @__PURE__ */ jsx(InsightBox, { type: "gold", text: /* @__PURE__ */ jsx(Fragment, { children: "\u0627\u0644\u062A\u062E\u0635\u0635\u0627\u062A \u0627\u0644\u0625\u062F\u0627\u0631\u064A\u0629 \u0648\u0627\u0644\u0642\u0627\u0646\u0648\u0646\u064A\u0629 \u0643\u062B\u064A\u0631\u0627\u064B \u0645\u0627 \u062A\u0634\u0643\u0648 \u0645\u0646 \u0636\u0639\u0641 \u0646\u0633\u0628 \u0627\u0644\u062A\u0648\u0638\u064A\u0641 \u0631\u063A\u0645 \u0623\u0639\u062F\u0627\u062F \u0627\u0644\u062E\u0631\u064A\u062C\u064A\u0646 \u0627\u0644\u0643\u0628\u064A\u0631\u0629. \u0647\u0630\u0627 \u0645\u0624\u0634\u0631 \u0639\u0644\u0649 \u0641\u0627\u0626\u0636 \u0641\u064A \u062D\u0645\u0644\u0629 \u0627\u0644\u062F\u0628\u0644\u0648\u0645 \u0641\u064A \u0647\u0630\u0647 \u0627\u0644\u062A\u062E\u0635\u0635\u0627\u062A\u060C \u0648\u064A\u0633\u062A\u062F\u0639\u064A \u062A\u0637\u0648\u064A\u0631 \u0627\u0644\u0645\u0646\u0627\u0647\u062C \u0648\u0625\u0642\u0627\u0645\u0629 \u0634\u0631\u0627\u0643\u0627\u062A \u0645\u0639 \u062C\u0647\u0627\u062A \u0627\u0644\u062A\u0648\u0638\u064A\u0641." }) }) })
+  ] });
+};
+const TabMarket = ({ data }) => {
+  if (!data.market) return /* @__PURE__ */ jsx(NoSheetWarning, { sheetName: SHEET_NAMES.market });
+  const records = data.market;
+  const counts = useMemo(() => {
+    const c = { "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A": 0, "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A + \u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631": 0, "\u0637\u0644\u0628 \u0645\u0646\u062E\u0641\u0636 (\u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631)": 0, "\u0644\u0627 \u062A\u0648\u062C\u062F \u0628\u064A\u0627\u0646\u0627\u062A": 0 };
+    records.forEach((r) => {
+      if (c[r.tier] !== void 0) c[r.tier]++;
+    });
+    return c;
+  }, [records]);
+  const distribution = [
+    { name: "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A", value: counts["\u0637\u0644\u0628 \u0639\u0627\u0644\u064A"], color: C.catA },
+    { name: "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A + \u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631", value: counts["\u0637\u0644\u0628 \u0639\u0627\u0644\u064A + \u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631"], color: C.catB },
+    { name: "\u0637\u0644\u0628 \u0645\u0646\u062E\u0641\u0636 (\u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631)", value: counts["\u0637\u0644\u0628 \u0645\u0646\u062E\u0641\u0636 (\u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631)"], color: C.catD },
+    { name: "\u0644\u0627 \u062A\u0648\u062C\u062F \u0628\u064A\u0627\u0646\u0627\u062A", value: counts["\u0644\u0627 \u062A\u0648\u062C\u062F \u0628\u064A\u0627\u0646\u0627\u062A"], color: C.textMuted }
+  ];
+  const bridge = records.filter((r) => r.tier === "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A + \u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631");
+  const high = records.filter((r) => r.tier === "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A");
+  const lowBridge = records.filter((r) => r.tier === "\u0637\u0644\u0628 \u0645\u0646\u062E\u0641\u0636 (\u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631)");
+  const totalAligned = counts["\u0637\u0644\u0628 \u0639\u0627\u0644\u064A"] + counts["\u0637\u0644\u0628 \u0639\u0627\u0644\u064A + \u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631"];
+  const totalRecords = records.length;
+  const alignedPct = totalRecords ? Math.round(totalAligned / totalRecords * 100) : 0;
+  return /* @__PURE__ */ jsxs("div", { children: [
+    /* @__PURE__ */ jsxs("p", { className: "text-base leading-relaxed mb-6", style: { color: C.text }, children: [
+      "\u064A\u0633\u062A\u0646\u062F \u0647\u0630\u0627 \u0627\u0644\u0645\u0639\u064A\u0627\u0631 \u0625\u0644\u0649 \u062A\u0642\u0631\u064A\u0631 \u0627\u0644\u0645\u0631\u0635\u062F \u0627\u0644\u0648\u0637\u0646\u064A \u0644\u0644\u0639\u0645\u0644 ",
+      /* @__PURE__ */ jsx("strong", { children: '"\u062A\u0648\u0642\u0639\u0627\u062A \u0627\u0644\u0645\u0647\u0646 \u0639\u0644\u0649 \u0627\u0644\u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u0648\u0637\u0646\u064A 2025\u20132034"' }),
+      " \u0627\u0644\u0635\u0627\u062F\u0631 \u0641\u064A \u0646\u0648\u0641\u0645\u0628\u0631 2025."
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-4 mb-8", children: [
+      /* @__PURE__ */ jsxs(Card, { className: "p-5", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-xs font-bold mb-3 tracking-wide", style: { color: C.gold }, children: "\u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062A\u0635\u0646\u064A\u0641" }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-3 text-sm", children: [
+            /* @__PURE__ */ jsx("div", { className: "w-3 h-3 rounded-full mt-1.5 flex-shrink-0", style: { background: C.catA } }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("strong", { children: "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A:" }),
+              " \u0636\u0645\u0646 \u0627\u0644\u062A\u062E\u0635\u0635\u0627\u062A \u0630\u0627\u062A \u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0639\u0627\u0644\u064A \u062D\u062A\u0649 2034"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-3 text-sm", children: [
+            /* @__PURE__ */ jsx("div", { className: "w-3 h-3 rounded-full mt-1.5 flex-shrink-0", style: { background: C.catB } }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("strong", { children: "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A + \u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631:" }),
+              " \u0645\u0637\u0644\u0648\u0628 \u0644\u0643\u0646 \u0641\u064A\u0647 \u0641\u0627\u0626\u0636 \u0641\u064A \u062D\u0645\u0644\u0629 \u0627\u0644\u062F\u0628\u0644\u0648\u0645"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-3 text-sm", children: [
+            /* @__PURE__ */ jsx("div", { className: "w-3 h-3 rounded-full mt-1.5 flex-shrink-0", style: { background: C.catD } }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("strong", { children: "\u0637\u0644\u0628 \u0645\u0646\u062E\u0641\u0636:" }),
+              " \u0645\u0633\u062A\u0647\u062F\u0641 \u0644\u0645\u0633\u0627\u0631\u0627\u062A \u0627\u0644\u062A\u062C\u0633\u064A\u0631"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-3 text-sm", children: [
+            /* @__PURE__ */ jsx("div", { className: "w-3 h-3 rounded-full mt-1.5 flex-shrink-0", style: { background: C.textMuted } }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("strong", { children: "\u0644\u0627 \u062A\u0648\u062C\u062F \u0628\u064A\u0627\u0646\u0627\u062A:" }),
+              " \u063A\u064A\u0631 \u0645\u0630\u0643\u0648\u0631 \u0641\u064A \u0627\u0644\u062A\u0642\u0631\u064A\u0631"
+            ] })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(Card, { className: "p-5", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-xs font-bold mb-3 tracking-wide", style: { color: C.gold }, children: "\u062A\u0648\u0632\u064A\u0639 \u0627\u0644\u062A\u062E\u0635\u0635\u0627\u062A \u062D\u0633\u0628 \u0627\u062D\u062A\u064A\u0627\u062C \u0627\u0644\u0633\u0648\u0642" }),
+        /* @__PURE__ */ jsx(ResponsiveContainer, { width: "100%", height: 220, children: /* @__PURE__ */ jsxs(PieChart, { children: [
+          /* @__PURE__ */ jsx(
+            Pie,
+            {
+              data: distribution,
+              cx: "50%",
+              cy: "50%",
+              outerRadius: 85,
+              dataKey: "value",
+              label: ({ value }) => value,
+              labelLine: false,
+              children: distribution.map((d, i) => /* @__PURE__ */ jsx(Cell, { fill: d.color }, i))
+            }
+          ),
+          /* @__PURE__ */ jsx(Tooltip, {})
+        ] }) })
+      ] })
+    ] }),
+    bridge.length > 0 && /* @__PURE__ */ jsxs(Card, { className: "p-6 mb-6", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.primaryDark }, children: "\u062A\u062E\u0635\u0635\u0627\u062A \u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0639\u0627\u0644\u064A + \u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631" }),
+      /* @__PURE__ */ jsx("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: "\u0627\u0644\u0623\u0643\u062B\u0631 \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0629 - \u062A\u062E\u0635\u0635\u0627\u062A \u0645\u0637\u0644\u0648\u0628\u0629 \u0644\u0643\u0646 \u0641\u064A\u0647\u0627 \u0641\u0627\u0626\u0636" }),
+      /* @__PURE__ */ jsxs("table", { className: "w-full", children: [
+        /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { background: C.ivory }, children: [
+          /* @__PURE__ */ jsx("th", { className: "px-4 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u0627\u0644\u062A\u062E\u0635\u0635" }),
+          /* @__PURE__ */ jsx("th", { className: "px-4 py-3 text-right text-sm font-bold", style: { color: C.primaryDark }, children: "\u2190 \u0627\u0644\u0627\u0633\u0645 \u0641\u064A \u0627\u0644\u0645\u0631\u0635\u062F" })
+        ] }) }),
+        /* @__PURE__ */ jsx("tbody", { children: bridge.map((s, i) => /* @__PURE__ */ jsxs("tr", { className: "hover:bg-stone-50", style: { borderTop: `1px solid ${C.ivoryDark}` }, children: [
+          /* @__PURE__ */ jsx("td", { className: "px-4 py-3 text-sm font-medium", style: { color: C.text }, children: s.name }),
+          /* @__PURE__ */ jsx("td", { className: "px-4 py-3 text-sm", style: { color: C.primary, fontWeight: 600 }, children: s.marketName })
+        ] }, i)) })
+      ] })
+    ] }),
+    high.length > 0 && /* @__PURE__ */ jsxs(Card, { className: "p-6 mb-6", children: [
+      /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold mb-1", style: { color: C.catA }, children: "\u062A\u062E\u0635\u0635\u0627\u062A \u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0639\u0627\u0644\u064A (\u0645\u0637\u0644\u0648\u0628\u0629 \u0628\u062F\u0648\u0646 \u0641\u0627\u0626\u0636)" }),
+      /* @__PURE__ */ jsxs("p", { className: "text-sm mb-4", style: { color: C.textMuted }, children: [
+        high.length,
+        " \u062A\u062E\u0635\u0635 \u2014 \u0641\u0631\u0635 \u062A\u0648\u0633\u0639 \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A"
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: high.map((s, i) => /* @__PURE__ */ jsx(
+        "span",
+        {
+          className: "px-3 py-1.5 rounded text-sm",
+          style: { background: C.catA + "12", color: C.catA, border: `1px solid ${C.catA}30`, fontWeight: 500 },
+          children: s.name
+        },
+        i
+      )) })
+    ] }),
+    lowBridge.length > 0 && /* @__PURE__ */ jsx(InsightBox, { type: "alert", title: "\u062A\u0646\u0628\u064A\u0647", text: /* @__PURE__ */ jsxs(Fragment, { children: [
+      lowBridge.length === 1 ? "\u062A\u062E\u0635\u0635 \u0648\u0627\u062D\u062F \u0636\u0645\u0646" : `${lowBridge.length} \u062A\u062E\u0635\u0635\u0627\u062A \u0636\u0645\u0646`,
+      " \u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0645\u0646\u062E\u0641\u0636 (\u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631): ",
+      /* @__PURE__ */ jsx("strong", { children: lowBridge.map((r) => r.name).join("\u060C ") }),
+      ". \u062A\u062D\u062A\u0627\u062C \u0625\u0639\u0627\u062F\u0629 \u062F\u0631\u0627\u0633\u0629 \u0627\u0644\u062C\u062F\u0648\u0649."
+    ] }) }),
+    /* @__PURE__ */ jsx("div", { className: "mt-6", children: /* @__PURE__ */ jsx(InsightBox, { type: "gold", text: /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsxs("strong", { children: [
+        alignedPct,
+        "% \u0645\u0646 \u0627\u0644\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u0645\u064F\u0642\u062F\u0645\u0629 (",
+        totalAligned,
+        " \u0645\u0646 ",
+        totalRecords,
+        ")"
+      ] }),
+      " \u062A\u062A\u0648\u0627\u0641\u0642 \u0645\u0639 \u0627\u062D\u062A\u064A\u0627\u062C\u0627\u062A \u0633\u0648\u0642 \u0627\u0644\u0639\u0645\u0644 \u0648\u0641\u0642 \u0627\u0644\u0645\u0631\u0635\u062F \u0627\u0644\u0648\u0637\u0646\u064A\u060C \u0648\u0647\u0630\u0627 \u0645\u0624\u0634\u0631 \u0625\u064A\u062C\u0627\u0628\u064A. \u0644\u0643\u0646 ",
+      /* @__PURE__ */ jsxs("strong", { children: [
+        counts["\u0644\u0627 \u062A\u0648\u062C\u062F \u0628\u064A\u0627\u0646\u0627\u062A"],
+        " \u062A\u062E\u0635\u0635"
+      ] }),
+      " \u0644\u0645 \u062A\u064F\u0630\u0643\u0631 \u0628\u0627\u0644\u0645\u0631\u0635\u062F\u060C \u0645\u0645\u0627 \u064A\u0639\u0646\u064A \u0639\u062F\u0645 \u0648\u0636\u0648\u062D \u0645\u0643\u0627\u0646\u062A\u0647\u0627 \u0627\u0644\u0645\u0633\u062A\u0642\u0628\u0644\u064A\u0629 \u0641\u064A \u0627\u0644\u0633\u0648\u0642 \u0648\u064A\u0633\u062A\u0648\u062C\u0628 \u062A\u062D\u0644\u064A\u0644\u0627\u064B \u0645\u0633\u062A\u0642\u0644\u0627\u064B."
+    ] }) }) })
+  ] });
+};
+const ProgramsTable = ({ programs }) => {
+  const [filter, setFilter] = useState("\u0627\u0644\u0643\u0644");
+  const [mode, setMode] = useState("\u0627\u0644\u0643\u0644");
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState("rank");
+  const [sortDir, setSortDir] = useState("asc");
+  const filtered = useMemo(() => {
+    let arr = programs.filter((p) => {
+      if (filter !== "\u0627\u0644\u0643\u0644" && p.category !== filter) return false;
+      if (mode !== "\u0627\u0644\u0643\u0644" && p.mode !== mode) return false;
+      if (search && !p.name.includes(search)) return false;
+      return true;
+    });
+    arr.sort((a, b) => {
+      const va = a[sortKey], vb = b[sortKey];
+      if (typeof va === "number") return sortDir === "asc" ? va - vb : vb - va;
+      return sortDir === "asc" ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+    return arr;
+  }, [filter, mode, search, sortKey, sortDir, programs]);
+  const setSort = (k) => {
+    if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else {
+      setSortKey(k);
+      setSortDir("asc");
+    }
+  };
+  const valColor = (v) => {
+    if (!v || v === "\u2014") return C.textMuted;
+    const high = ["\u0639\u0627\u0644\u064A \u062C\u062F\u0627\u064B", "\u0639\u0627\u0644\u064A", "\u0645\u0631\u0636\u064A", "\u0639\u0627\u0644\u064A\u0629", "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A"];
+    const mid = ["\u0645\u062A\u0648\u0633\u0637", "\u0645\u062A\u0648\u0633\u0637\u0629", "\u0637\u0644\u0628 \u0639\u0627\u0644\u064A + \u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631"];
+    const low = ["\u0645\u0646\u062E\u0641\u0636", "\u0645\u0646\u062E\u0641\u0636 \u062C\u062F\u0627\u064B", "\u0645\u0646\u062E\u0641\u0636\u0629", "\u0637\u0644\u0628 \u0645\u0646\u062E\u0641\u0636 (\u0645\u0633\u0627\u0631 \u062A\u062C\u0633\u064A\u0631)"];
+    if (high.includes(v)) return C.catA;
+    if (mid.includes(v)) return C.catC;
+    if (low.includes(v)) return C.catD;
+    return C.textMuted;
+  };
+  return /* @__PURE__ */ jsx("section", { id: "programs", className: "py-20 px-8", style: { background: C.ivory }, children: /* @__PURE__ */ jsxs("div", { className: "max-w-[1600px] mx-auto", children: [
+    /* @__PURE__ */ jsx(
+      SectionTitle,
+      {
+        kicker: "EXPLORE",
+        title: "\u0627\u0633\u062A\u0643\u0634\u0627\u0641 \u0627\u0644\u0628\u0631\u0627\u0645\u062C",
+        subtitle: `\u062C\u062F\u0648\u0644 \u062A\u0641\u0627\u0639\u0644\u064A \u0634\u0627\u0645\u0644 \u0644\u062C\u0645\u064A\u0639 \u0627\u0644\u0640 ${programs.length} \u0628\u0631\u0646\u0627\u0645\u062C \u0645\u0639 \u0641\u0644\u062A\u0631\u0629 \u0648\u062A\u0631\u062A\u064A\u0628`
+      }
+    ),
+    /* @__PURE__ */ jsxs(Card, { className: "p-5 mb-6", children: [
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-12 gap-4 items-center", children: [
+        /* @__PURE__ */ jsxs("div", { className: "col-span-3", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-xs font-bold mb-2 block", style: { color: C.textMuted }, children: "\u0627\u0644\u0641\u0626\u0629" }),
+          /* @__PURE__ */ jsx("div", { className: "flex gap-1", children: ["\u0627\u0644\u0643\u0644", "\u0623", "\u0628", "\u062C", "\u062F"].map((f) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: () => setFilter(f),
+              className: "flex-1 px-3 py-2 rounded text-sm transition-all",
+              style: {
+                background: filter === f ? f === "\u0627\u0644\u0643\u0644" ? C.primary : catColor(f) : C.white,
+                color: filter === f ? C.white : C.text,
+                border: `1px solid ${filter === f ? "transparent" : C.ivoryDark}`,
+                fontWeight: filter === f ? 700 : 500
+              },
+              children: f
+            },
+            f
+          )) })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "col-span-4", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-xs font-bold mb-2 block", style: { color: C.textMuted }, children: "\u0646\u0645\u0637 \u0627\u0644\u062A\u0642\u062F\u064A\u0645" }),
+          /* @__PURE__ */ jsx("div", { className: "flex gap-1", children: ["\u0627\u0644\u0643\u0644", "\u062A\u0639\u0644\u064A\u0645 \u0639\u0646 \u0628\u064F\u0639\u062F", "\u0627\u0646\u062A\u0638\u0627\u0645 \u0645\u0633\u0627\u0626\u064A"].map((m) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: () => setMode(m),
+              className: "flex-1 px-3 py-2 rounded text-sm transition-all whitespace-nowrap",
+              style: {
+                background: mode === m ? C.primaryDark : C.white,
+                color: mode === m ? C.white : C.text,
+                border: `1px solid ${mode === m ? "transparent" : C.ivoryDark}`,
+                fontWeight: mode === m ? 700 : 500
+              },
+              children: m
+            },
+            m
+          )) })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "col-span-5", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-xs font-bold mb-2 block", style: { color: C.textMuted }, children: "\u0628\u062D\u062B" }),
+          /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+            /* @__PURE__ */ jsx(Search, { size: 16, className: "absolute right-3 top-1/2 -translate-y-1/2", color: C.textMuted }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                value: search,
+                onChange: (e) => setSearch(e.target.value),
+                placeholder: "\u0627\u0628\u062D\u062B \u0639\u0646 \u062A\u062E\u0635\u0635...",
+                className: "w-full px-10 py-2 rounded text-sm outline-none",
+                style: { border: `1px solid ${C.ivoryDark}`, background: C.white }
+              }
+            )
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "mt-4 text-xs", style: { color: C.textMuted }, children: [
+        "\u0639\u0631\u0636 ",
+        /* @__PURE__ */ jsx("strong", { style: { color: C.primaryDark }, children: filtered.length }),
+        " \u0645\u0646 \u0623\u0635\u0644 ",
+        programs.length,
+        " \u0628\u0631\u0646\u0627\u0645\u062C"
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx(Card, { className: "overflow-hidden", children: /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs("table", { className: "w-full", children: [
+      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsx("tr", { style: { background: C.primaryDark }, children: [
+        { k: "rank", l: "#", w: "w-12" },
+        { k: "name", l: "\u0627\u0644\u062A\u062E\u0635\u0635", w: "" },
+        { k: "mode", l: "\u0627\u0644\u0646\u0645\u0637", w: "w-32" },
+        { k: "terms", l: "\u0641\u0635\u0648\u0644", w: "w-16" },
+        { k: "demand", l: "\u0627\u0644\u0625\u0642\u0628\u0627\u0644", w: "w-28" },
+        { k: "financial", l: "\u0627\u0644\u0643\u0641\u0627\u0621\u0629", w: "w-32" },
+        { k: "employment", l: "\u0627\u0644\u062A\u0648\u0638\u064A\u0641", w: "w-24" },
+        { k: "market", l: "\u0627\u0644\u0633\u0648\u0642", w: "w-44" },
+        { k: "score", l: "\u0627\u0644\u0646\u0642\u0627\u0637", w: "w-20" },
+        { k: "category", l: "\u0627\u0644\u0641\u0626\u0629", w: "w-16" }
+      ].map((h) => /* @__PURE__ */ jsx(
+        "th",
+        {
+          onClick: () => setSort(h.k),
+          className: `px-3 py-3 text-right text-sm font-bold cursor-pointer hover:bg-white/10 ${h.w}`,
+          style: { color: C.white },
+          children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1", children: [
+            h.l,
+            sortKey === h.k && /* @__PURE__ */ jsx(ArrowDownUp, { size: 11 })
+          ] })
+        },
+        h.k
+      )) }) }),
+      /* @__PURE__ */ jsx("tbody", { children: filtered.map((p) => /* @__PURE__ */ jsxs("tr", { className: "hover:bg-stone-50", style: { borderTop: `1px solid ${C.ivoryDark}` }, children: [
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-sm font-bold", style: { color: C.textMuted }, children: p.rank }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-sm", style: { color: C.text }, children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 flex-wrap", children: [
+          /* @__PURE__ */ jsx("span", { className: "font-medium", children: p.name }),
+          p.limitedData && /* @__PURE__ */ jsx(
+            "span",
+            {
+              className: "text-[10px] px-1.5 py-0.5 rounded",
+              style: { background: "#FFF1E0", color: "#B86A19", border: "1px solid #E89A50" },
+              children: "\u0628\u064A\u0627\u0646\u0627\u062A \u0645\u062D\u062F\u0648\u062F\u0629"
+            }
+          )
+        ] }) }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-xs", style: { color: C.textMuted }, children: p.mode }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-sm text-center", style: { color: C.text }, children: p.terms }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-xs", style: { color: valColor(p.demand), fontWeight: 600 }, children: p.demand }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-xs", style: { color: valColor(p.financial), fontWeight: 600 }, children: p.financial }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-xs", style: { color: valColor(p.employment), fontWeight: 600 }, children: p.employment }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-xs", style: { color: valColor(p.market), fontWeight: 600 }, children: p.market }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3 text-sm font-black", style: { color: catColor(p.category) }, children: p.score }),
+        /* @__PURE__ */ jsx("td", { className: "px-3 py-3", children: /* @__PURE__ */ jsx(
+          "span",
+          {
+            className: "inline-flex items-center justify-center w-8 h-8 rounded font-black text-white text-sm",
+            style: { background: catColor(p.category) },
+            children: p.category
+          }
+        ) })
+      ] }, p.rank)) })
+    ] }) }) })
+  ] }) });
+};
+const Scenarios = () => {
+  const scenarios = [
+    {
+      icon: Megaphone,
+      color: C.catB,
+      bg: catBg("\u0628"),
+      title: "\u0625\u0642\u0628\u0627\u0644 \u0636\u0639\u064A\u0641 + \u0628\u0642\u064A\u0629 \u0627\u0644\u0645\u0624\u0634\u0631\u0627\u062A \u0639\u0627\u0644\u064A\u0629",
+      recommendation: "\u062D\u0645\u0644\u0627\u062A \u062A\u0633\u0648\u064A\u0642\u064A\u0629 \u0645\u0643\u062B\u0641\u0629",
+      description: "\u0628\u0631\u0627\u0645\u062C \u0630\u0627\u062A \u0643\u0641\u0627\u0621\u0629 \u0645\u0627\u0644\u064A\u0629 \u0648\u062A\u0648\u0638\u064A\u0641\u064A\u0629 \u0645\u0645\u062A\u0627\u0632\u0629 \u0644\u0643\u0646 \u0623\u0639\u062F\u0627\u062F \u0627\u0644\u0645\u0642\u0628\u0648\u0644\u064A\u0646 \u0645\u0646\u062E\u0641\u0636\u0629. \u0627\u0644\u062D\u0644: \u0627\u0633\u062A\u062B\u0645\u0627\u0631 \u0641\u064A \u0627\u0644\u062A\u0633\u0648\u064A\u0642 \u0627\u0644\u0645\u0648\u062C\u0651\u0647."
+    },
+    {
+      icon: GraduationCap,
+      color: C.catC,
+      bg: catBg("\u062C"),
+      title: "\u062A\u062D\u062F\u064A \u0641\u064A \u0627\u0644\u062A\u0648\u0638\u064A\u0641 + \u0637\u0644\u0628 \u0639\u0627\u0644\u064A \u0628\u0627\u0644\u0633\u0648\u0642",
+      recommendation: "\u062A\u0637\u0648\u064A\u0631 \u0627\u0644\u0645\u0646\u0627\u0647\u062C + \u0634\u0631\u0627\u0643\u0627\u062A \u0645\u0639 \u062C\u0647\u0627\u062A \u0627\u0644\u062A\u0648\u0638\u064A\u0641",
+      description: "\u062A\u062E\u0635\u0635\u0627\u062A \u0627\u0644\u0633\u0648\u0642 \u0628\u062D\u0627\u062C\u0629 \u0625\u0644\u064A\u0647\u0627 \u0644\u0643\u0646 \u062E\u0631\u064A\u062C\u0648\u0647\u0627 \u064A\u0648\u0627\u062C\u0647\u0648\u0646 \u0635\u0639\u0648\u0628\u0629 \u0641\u064A \u0627\u0644\u062A\u0648\u0638\u064A\u0641. \u0627\u0644\u062D\u0644: \u062A\u0637\u0648\u064A\u0631 \u0627\u0644\u0645\u0647\u0627\u0631\u0627\u062A \u0648\u0628\u0646\u0627\u0621 \u062C\u0633\u0648\u0631 \u062A\u0648\u0638\u064A\u0641."
+    },
+    {
+      icon: AlertTriangle,
+      color: C.catD,
+      bg: catBg("\u062F"),
+      title: "\u0643\u0644 \u0627\u0644\u0645\u0624\u0634\u0631\u0627\u062A \u0636\u0639\u064A\u0641\u0629",
+      recommendation: "\u0625\u064A\u0642\u0627\u0641 \u0627\u0644\u062A\u0634\u063A\u064A\u0644 \u0623\u0648 \u0625\u0639\u0627\u062F\u0629 \u062A\u0635\u0645\u064A\u0645 \u062C\u0648\u0647\u0631\u064A",
+      description: "\u0628\u0631\u0627\u0645\u062C \u0636\u0639\u064A\u0641\u0629 \u0627\u0644\u0625\u0642\u0628\u0627\u0644\u060C \u0645\u0646\u062E\u0641\u0636\u0629 \u0627\u0644\u0643\u0641\u0627\u0621\u0629\u060C \u0636\u0639\u064A\u0641\u0629 \u0627\u0644\u062A\u0648\u0638\u064A\u0641\u060C \u0648\u0644\u0627 \u064A\u0637\u0644\u0628\u0647\u0627 \u0627\u0644\u0633\u0648\u0642. \u0627\u0644\u062D\u0644: \u0642\u0631\u0627\u0631 \u062D\u0627\u0633\u0645."
+    }
+  ];
+  return /* @__PURE__ */ jsx("section", { id: "scenarios", className: "py-20 px-8", style: { background: C.white }, children: /* @__PURE__ */ jsxs("div", { className: "max-w-[1400px] mx-auto", children: [
+    /* @__PURE__ */ jsx(
+      SectionTitle,
+      {
+        kicker: "DECISION FRAMEWORK",
+        title: "\u0633\u064A\u0646\u0627\u0631\u064A\u0648\u0647\u0627\u062A \u0627\u062A\u062E\u0627\u0630 \u0627\u0644\u0642\u0631\u0627\u0631",
+        subtitle: "\u062B\u0644\u0627\u062B\u0629 \u0623\u0646\u0645\u0627\u0637 \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0629 \u0644\u062A\u0648\u062C\u064A\u0647 \u0645\u0633\u062A\u0642\u0628\u0644 \u0627\u0644\u0628\u0631\u0627\u0645\u062C"
+      }
+    ),
+    /* @__PURE__ */ jsx("div", { className: "grid grid-cols-3 gap-6", children: scenarios.map((s, i) => {
+      const Icon = s.icon;
+      return /* @__PURE__ */ jsx(Reveal, { delay: i * 120, children: /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: "rounded-lg p-7 h-full transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl",
+          style: {
+            background: `linear-gradient(135deg, ${C.white} 0%, ${s.bg} 100%)`,
+            border: `1px solid ${C.ivoryDark}`,
+            borderTop: `4px solid ${s.color}`
+          },
+          children: [
+            /* @__PURE__ */ jsx("div", { className: "w-14 h-14 rounded flex items-center justify-center mb-5", style: { background: s.color }, children: /* @__PURE__ */ jsx(Icon, { size: 26, color: C.white, strokeWidth: 2.2 }) }),
+            /* @__PURE__ */ jsx("h3", { className: "text-lg font-bold leading-snug mb-3", style: { color: C.primaryDark }, children: s.title }),
+            /* @__PURE__ */ jsxs("div", { className: "mb-4 pb-4", style: { borderBottom: `1px dashed ${C.gold}` }, children: [
+              /* @__PURE__ */ jsx("div", { className: "text-xs mb-1 tracking-wide", style: { color: C.gold, fontWeight: 700 }, children: "\u0627\u0644\u062A\u0648\u0635\u064A\u0629" }),
+              /* @__PURE__ */ jsx("div", { className: "text-sm font-bold", style: { color: s.color }, children: s.recommendation })
+            ] }),
+            /* @__PURE__ */ jsx("p", { className: "text-sm leading-relaxed", style: { color: C.text }, children: s.description })
+          ]
+        }
+      ) }, i);
+    }) })
+  ] }) });
+};
+const Footer = () => /* @__PURE__ */ jsx("footer", { className: "py-12 px-8 text-white", style: { background: C.primaryDark, borderTop: `2px solid ${C.gold}` }, children: /* @__PURE__ */ jsxs("div", { className: "max-w-[1400px] mx-auto", children: [
+  /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-8 mb-8", children: [
+    /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 mb-4", children: [
+        /* @__PURE__ */ jsx("img", { src: KAU_LOGO, alt: "KAU", style: { height: "60px", filter: "brightness(1.1)" } }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("div", { className: "font-bold", children: "\u062C\u0627\u0645\u0639\u0629 \u0627\u0644\u0645\u0644\u0643 \u0639\u0628\u062F\u0627\u0644\u0639\u0632\u064A\u0632" }),
+          /* @__PURE__ */ jsx("div", { className: "text-sm", style: { color: C.goldLight }, children: "\u0627\u0644\u0643\u0644\u064A\u0629 \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u064A\u0629" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("p", { className: "text-xs leading-relaxed", style: { color: C.goldLight }, children: "\u062A\u062D\u0644\u064A\u0644 \u0634\u0627\u0645\u0644 \u0644\u0628\u0631\u0627\u0645\u062C \u0627\u0644\u062F\u0628\u0644\u0648\u0645 \u0628\u0627\u0633\u062A\u062E\u062F\u0627\u0645 \u0645\u0646\u0647\u062C\u064A\u0629 \u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0645\u062A\u0639\u062F\u062F \u0627\u0644\u0645\u0639\u0627\u064A\u064A\u0631" })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx("h4", { className: "font-bold mb-3", style: { color: C.gold }, children: "\u0627\u0644\u0645\u0635\u0627\u062F\u0631" }),
+      /* @__PURE__ */ jsxs("ul", { className: "text-sm space-y-2", style: { color: C.goldLight }, children: [
+        /* @__PURE__ */ jsx("li", { children: "\u062A\u0642\u0631\u064A\u0631 \u0627\u0644\u0645\u0631\u0635\u062F \u0627\u0644\u0648\u0637\u0646\u064A \u0644\u0644\u0639\u0645\u0644 (\u0646\u0648\u0641\u0645\u0628\u0631 2025)" }),
+        /* @__PURE__ */ jsx("li", { children: "\u062A\u0648\u0642\u0639\u0627\u062A \u0627\u0644\u0645\u0647\u0646 \u0639\u0644\u0649 \u0627\u0644\u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u0648\u0637\u0646\u064A 2025\u20132034" }),
+        /* @__PURE__ */ jsx("li", { children: "\u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0627\u0644\u0642\u0628\u0648\u0644 2023\u20132026" }),
+        /* @__PURE__ */ jsx("li", { children: "\u062A\u0642\u0627\u0631\u064A\u0631 \u0627\u0644\u0643\u0641\u0627\u0621\u0629 \u0627\u0644\u0645\u0627\u0644\u064A\u0629 \u0644\u0644\u0643\u0644\u064A\u0629 \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u064A\u0629" })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx("h4", { className: "font-bold mb-3", style: { color: C.gold }, children: "\u0645\u0646\u0647\u062C\u064A\u0629 \u0627\u0644\u062A\u062D\u0644\u064A\u0644" }),
+      /* @__PURE__ */ jsxs("ul", { className: "text-sm space-y-2", style: { color: C.goldLight }, children: [
+        /* @__PURE__ */ jsx("li", { children: "Multi-Criteria Decision Analysis (MCDA)" }),
+        /* @__PURE__ */ jsx("li", { children: "\u0623\u0631\u0628\u0639\u0629 \u0645\u0639\u0627\u064A\u064A\u0631 \u0645\u062A\u0633\u0627\u0648\u064A\u0629 \u0627\u0644\u0648\u0632\u0646 (25% \u0644\u0643\u0644)" }),
+        /* @__PURE__ */ jsx("li", { children: "\u062A\u062D\u0644\u064A\u0644 \u062A\u062E\u0635\u0635 \xD7 \u0646\u0645\u0637 (\u0637\u0644\u0627\u0628 / \u0637\u0627\u0644\u0628\u0627\u062A)" }),
+        /* @__PURE__ */ jsx("li", { children: "\u062A\u0635\u0646\u064A\u0641 \u0646\u0647\u0627\u0626\u064A \u0639\u0644\u0649 4 \u0641\u0626\u0627\u062A (\u0623 / \u0628 / \u062C / \u062F)" })
+      ] })
+    ] })
+  ] }),
+  /* @__PURE__ */ jsxs("div", { className: "pt-6 flex justify-between items-center text-xs", style: { borderTop: `1px solid ${C.gold}40`, color: C.goldLight }, children: [
+    /* @__PURE__ */ jsx("div", { children: "\xA9 2026 \u062C\u0627\u0645\u0639\u0629 \u0627\u0644\u0645\u0644\u0643 \u0639\u0628\u062F\u0627\u0644\u0639\u0632\u064A\u0632 - \u0627\u0644\u0643\u0644\u064A\u0629 \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u064A\u0629" }),
+    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+      /* @__PURE__ */ jsx(Shield, { size: 14 }),
+      /* @__PURE__ */ jsx("span", { children: "\u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u062A\u0639\u0627\u0644\u064E\u062C \u0645\u062D\u0644\u064A\u0627\u064B \u0648\u0644\u0627 \u062A\u0631\u0641\u0639 \u0644\u0623\u064A \u062E\u0627\u062F\u0645" })
+    ] })
+  ] })
+] }) });
+const Dashboard = ({ data, onReset }) => /* @__PURE__ */ jsxs("div", { className: "min-h-screen", style: { background: C.white, color: C.text }, children: [
+  /* @__PURE__ */ jsx(Navbar, { onReset }),
+  /* @__PURE__ */ jsx(Hero, { programs: data.programs }),
+  /* @__PURE__ */ jsx(Methodology, {}),
+  /* @__PURE__ */ jsx(Overview, { programs: data.programs }),
+  /* @__PURE__ */ jsx(CriteriaAnalysis, { data }),
+  /* @__PURE__ */ jsx(ProgramsTable, { programs: data.programs }),
+  /* @__PURE__ */ jsx(Scenarios, {}),
+  /* @__PURE__ */ jsx(Footer, {})
+] });
+function App() {
+  const [data, setData] = useState(null);
+  return /* @__PURE__ */ jsxs("div", { dir: "rtl", children: [
+    /* @__PURE__ */ jsx("style", { children: `
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
+        * { font-family: 'Tajawal', 'IBM Plex Sans Arabic', system-ui, sans-serif; }
+        body { background: ${C.white}; margin: 0; }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media print {
+          .print\\:hidden { display: none !important; }
+          section { page-break-inside: avoid; }
+        }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: ${C.ivory}; }
+        ::-webkit-scrollbar-thumb { background: ${C.primary}; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: ${C.primaryDark}; }
+      ` }),
+    !data ? /* @__PURE__ */ jsx(UploadScreen, { onParsed: setData }) : /* @__PURE__ */ jsx(Dashboard, { data, onReset: () => setData(null) })
+  ] });
+}
+export {
+  App as default
+};
+
+const root = createRoot(document.getElementById('root'));
+root.render(jsx(App, {}));
+
+const loader = document.getElementById('loader');
+loader.style.opacity = '0';
+setTimeout(() => loader.remove(), 500);
+</script>
+</body>
+</html>
